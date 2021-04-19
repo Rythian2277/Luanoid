@@ -1,0 +1,12 @@
+{
+  "name": "Luanoid",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "Folder",
+      "Luanoid": {
+        "$path": "src/Luanoid"
+      }
+    }
+  }
+}
