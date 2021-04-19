@@ -1,0 +1,269 @@
+--// File Name: Luanoid (Based on Cardinoid, separated from Cardinal Engine and built in a proper class structure.)
+--// Creator: Rythian Smythe / Rythian2277
+--// Date: April 18, 2021
+
+local Class = require(3696101309)
+local Event = require(3908178708)
+local StateController = require(script.StateController)
+local CharacterState = require(script.CharacterState)
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+local Luanoid = Class() do
+    function Luanoid:init(...)
+        local args = {...}
+        self.Character = nil
+
+        if typeof(args[1]) == "Instance" then --// Luanoid model exists, just mounting onto the model.
+            self.Character = args[1]
+            self.Mover = self.Character.HumanoidRootPart.Mover
+            self.Aligner = self.Character.HumanoidRootPart.Aligner
+            self.Animator = self.Character.AnimationController.Animator
+            self.RootPart = self.Character.HumanoidRootPart
+        else --// Needs to be created
+            self.Character = Instance.new("Model")
+            self.Character.Name = args[2].Name or "NPC"
+            local moveDirAttachment = Instance.new("Attachment")
+            moveDirAttachment.Name = "MoveDirection"
+
+            local lookDirAttachment = Instance.new("Attachment")
+            lookDirAttachment.Name = "LookDirection"
+
+            local humanoidRootPart = Instance.new("Part")
+            humanoidRootPart.Name = "HumanoidRootPart"
+            humanoidRootPart.Transparency = 1
+            humanoidRootPart.Size = Vector3.new(1,1,1)
+            humanoidRootPart.RootPriority = 127
+            humanoidRootPart.Parent = self.Character
+
+            local vectorForce = Instance.new("VectorForce")
+            vectorForce.Name = "Mover"
+            vectorForce.RelativeTo = Enum.ActuatorRelativeTo.World
+            vectorForce.ApplyAtCenterOfMass = true
+            vectorForce.Attachment0 = moveDirAttachment
+            vectorForce.Force = Vector3.new()
+            vectorForce.Parent = humanoidRootPart
+
+            local alignOrientation = Instance.new("AlignOrientation")
+            alignOrientation.Name = "Aligner"
+            alignOrientation.Responsiveness = 20
+            alignOrientation.Attachment0 = moveDirAttachment
+            alignOrientation.Attachment1 = lookDirAttachment
+            alignOrientation.Parent = humanoidRootPart
+
+            moveDirAttachment.Parent = humanoidRootPart
+            lookDirAttachment.Parent = game.Workspace:FindFirstChildWhichIsA("Terrain")
+
+            local animationController = Instance.new("AnimationController")
+            animationController.Parent = self.Character
+
+            local animator = Instance.new("Animator")
+            animator.Parent = animationController
+
+            self.Character.PrimaryPart = humanoidRootPart
+
+            self.Mover = vectorForce
+            self.Aligner = alignOrientation
+            self.Animator = animator
+            self.RootPart = humanoidRootPart
+        end
+
+        self.Health = args[2].Health or 100
+        self.MaxHealth = args[2].MaxHealth or 100
+        self.WalkSpeed = args[2].WalkSpeed or 16
+        self.JumpPower = args[2].JumpPower or 50
+        self.HipHeight = args[2].HipHeight or 2
+        self.AutoRotate = args[2].AutoRotate or true
+        self.CanJump = args[2].CanJump or true
+        self.CanClimb = args[2].CanClimb or true
+        self.StateController = (args[2].StateController or StateController)(self)
+        self.PreSimConnection = nil
+        self.JumpInput = false
+        self.MoveToTarget = nil
+        self.MoveToTimeout = 0
+        self.MoveToTick = 0
+        self.RigParts = {}
+        self.MoveDir = Vector3.new()
+        self.LookDir = Vector3.new()
+        self.LastState = CharacterState.Idling
+        self.State = CharacterState.Idling --CharacterState.Idling,
+        self.RootPart = nil
+        self.AnimationTracks = {}
+        self.PlayingAnimations = {}
+        self.MoveToFinished = Event()
+        self.StateChanged = Event()
+
+        if RunService:IsClient() then
+            self.NetworkOwner = Players.LocalPlayer.Name
+        end
+
+        self.Character.AncestryChanged:Connect(function()
+            if self.Character:IsDescendantOf(game.Workspace) and self.Character:GetAttribute("NetworkOwner") == self.NetworkOwner then
+                self:ResumeSimulation()
+            else
+                self:PauseSimulation()
+            end
+            if self.Character:IsDescendantOf(game.Workspace) then
+                self:SetNetworkOwner(nil)
+            end
+        end)
+
+        self.Character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
+            if self.Character:GetAttribute("NetworkOwner") == self.NetworkOwner then
+                self:ResumeSimulation()
+            else
+                self:PauseSimulation()
+            end
+        end)
+
+        if self.Character:GetAttribute("NetworkOwner") == self.NetworkOwner then
+            self:ResumeSimulation()
+        end
+    end
+
+    function Luanoid:Destroy()
+        self.Aligner.Attachment1:Destroy()
+        self.Character:Destroy()
+        self.StateController:Destroy()
+        self:PauseSimulation()
+    end
+
+    function Luanoid:MountRig(rig)
+        assert(typeof(rig) == "Instance", "Expected Instance as Argument #1, instead got ".. typeof(rig))
+        assert(rig:FindFirstChild("HumanoidRootPart"), "Expected rig to have a HumanoidRootPart")
+
+        self:UnmountRig()
+
+        local character = self.Character
+        local humanoidRootPart = character.HumanoidRootPart
+        local rigParts = self.RigParts
+
+        rig = rig:Clone()
+        for _,v in pairs(rig:GetDescendants()) do
+            if v:IsA("Motor6D") then
+                if v.Part0.Name == "HumanoidRootPart" then
+                    v.Part0 = humanoidRootPart
+                end
+                if v.Part1.Name == "HumanoidRootPart" then
+                    v.Part1 = humanoidRootPart
+                end
+            elseif v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                table.insert(rigParts, v)
+                v.Anchored = false
+                v.Massless = true
+                v.Parent = character
+            end
+        end
+
+        humanoidRootPart.Size = rig.HumanoidRootPart.Size
+
+        rig:Destroy()
+    end
+
+    function Luanoid:UnmountRig()
+        for _,limb in pairs(self.RigParts) do
+            limb:Destroy()
+        end
+        return self
+    end
+
+    function Luanoid:LoadAnimation(animation, name)
+        assert(typeof(animation) == "Instance" and animation:IsA("Animation"), "Expected Animation as Argument #1")
+        name = name or animation.Name
+        local animationTrack = self.Animator:LoadAnimation(animation)
+        self.AnimationTracks[name] = self.AnimationTracks[name] or {}
+        table.insert(self.AnimationTracks[name], animationTrack)
+        return animationTrack
+    end
+
+    function Luanoid:PlayAnimation(name, ...)
+        local animationTracks = self.AnimationTracks[name]
+        if animationTracks then
+            local numAnimationTracks = #animationTracks
+            local animationTrack = animationTracks[math.random(1, numAnimationTracks)]
+            animationTrack:Play(...)
+            self.PlayingAnimations[name] = animationTrack
+        end
+        return self
+    end
+
+    function Luanoid:StopAnimation(name, ...)
+        local animationTrack = self.PlayingAnimations[name]
+        if animationTrack then
+            animationTrack:Stop(...)
+            self.PlayingAnimations[name] = nil
+        end
+        return self
+    end
+
+    function Luanoid:StopAllAnimations(...)
+        for _,animationTrack in pairs(self.Animator:GetPlayingAnimationTracks()) do
+            animationTrack:Stop(...)
+        end
+        return self
+    end
+
+    function Luanoid:Jump()
+        if self.CanJump then
+            self.JumpInput = true
+        end
+        return self
+    end
+
+    function Luanoid:MoveTo(target, timeout)
+        self.MoveToTarget = target
+        self.MoveToTimeout = timeout or 8
+        self.MoveToTick = tick()
+    end
+
+    function Luanoid:CancelMoveTo()
+        self.MoveToTarget = nil
+        self.MoveToTimeout = 8
+        self.MoveToTick = 0
+    end
+
+    function Luanoid:SetNetworkOwner(networkOwner)
+        assert(networkOwner == nil or (typeof(networkOwner) == "Instance" and networkOwner:IsA("Player")), "Expected nil or Player as Argument #1, instead got ".. typeof(networkOwner))
+        local character = self.Character
+        if networkOwner then
+            character:SetAttribute("NetworkOwner", networkOwner.Name)
+        else
+            character:SetAttribute("NetworkOwner", nil)
+        end
+        if character:IsDescendantOf(workspace) then
+            character.HumanoidRootPart:SetNetworkOwner(networkOwner)
+        end
+        return self
+    end
+
+    function Luanoid:PauseSimulation()
+        local connection = self.PreSimConnection
+        if connection then
+            connection:Disconnect()
+        end
+    end
+
+    function Luanoid:ResumeSimulation()
+        local connection = self.PreSimConnection
+        if not connection or (connection and not connection.Connected) then
+            -- TODO: Switch this to PreSimulation once enabled
+            self.PreSimConnection = RunService.Heartbeat:Connect(function(dt)
+                if not self.Character.HumanoidRootPart:IsGrounded() then
+                    local newState = self.StateController:Update(dt)
+                    local curState = self.State
+                    if newState ~= curState then
+                        self.LastState = curState
+                        self.State = newState
+                        self.StateChanged:Fire(self.State, self.LastState)
+                        self:StopAnimation(curState.Name)
+                        self:PlayAnimation(newState.Name)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+return Luanoid
+
