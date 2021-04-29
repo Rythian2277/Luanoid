@@ -3,7 +3,7 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "$className": "Folder",
+      "$className": "ReplicatedStorage",
       "Luanoid": {
         "$path": "src/Luanoid"
       }
