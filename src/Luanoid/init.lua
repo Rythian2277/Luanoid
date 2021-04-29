@@ -11,19 +11,18 @@ local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
 local Luanoid = Class() do
-    function Luanoid:init(...)
-        local args = {...}
-        self.Character = nil
-
-        if typeof(args[1]) == "Instance" then --// Luanoid model exists, just mounting onto the model.
-            self.Character = args[1]
+    function Luanoid:init(luanoidParams)
+        if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
+            self.Character = luanoidParams
             self.Mover = self.Character.HumanoidRootPart.Mover
             self.Aligner = self.Character.HumanoidRootPart.Aligner
             self.Animator = self.Character.AnimationController.Animator
             self.RootPart = self.Character.HumanoidRootPart
         else --// Needs to be created
+            luanoidParams = luanoidParams or {}
+
             self.Character = Instance.new("Model")
-            self.Character.Name = args[2].Name or "NPC"
+            self.Character.Name = luanoidParams.Name or "NPC"
             local moveDirAttachment = Instance.new("Attachment")
             moveDirAttachment.Name = "MoveDirection"
 
@@ -69,30 +68,42 @@ local Luanoid = Class() do
             self.RootPart = humanoidRootPart
         end
 
-        self.Health = args[2].Health or 100
-        self.MaxHealth = args[2].MaxHealth or 100
-        self.WalkSpeed = args[2].WalkSpeed or 16
-        self.JumpPower = args[2].JumpPower or 50
-        self.HipHeight = args[2].HipHeight or 2
-        self.AutoRotate = args[2].AutoRotate or true
-        self.CanJump = args[2].CanJump or true
-        self.CanClimb = args[2].CanClimb or true
-        self.StateController = (args[2].StateController or StateController)(self)
+        self.Health = luanoidParams.Health or 100
+        self.MaxHealth = luanoidParams.MaxHealth or 100
+        self.WalkSpeed = luanoidParams.WalkSpeed or 16
+        self.JumpPower = luanoidParams.JumpPower or 50
+        self.HipHeight = luanoidParams.HipHeight or 2
+        self.StateController = (luanoidParams.StateController or StateController)(self)
         self.PreSimConnection = nil
         self.JumpInput = false
         self.MoveToTarget = nil
         self.MoveToTimeout = 0
-        self.MoveToTick = 0
+        self._moveToTickStart = 0
         self.RigParts = {}
         self.MoveDir = Vector3.new()
         self.LookDir = Vector3.new()
         self.LastState = CharacterState.Idling
-        self.State = CharacterState.Idling --CharacterState.Idling,
-        self.RootPart = nil
+        self.State = CharacterState.Idling
         self.AnimationTracks = {}
         self.PlayingAnimations = {}
         self.MoveToFinished = Event()
         self.StateChanged = Event()
+
+        if luanoidParams.AutoRotate == nil then
+            self.AutoRotate = true
+        else
+            self.AutoRotate = luanoidParams.AutoRotate
+        end
+        if luanoidParams.CanJump == nil then
+            self.CanJump = true
+        else
+            self.CanJump = luanoidParams.CanJump
+        end
+        if luanoidParams.CanClimb == nil then
+            self.CanClimb = true
+        else
+            self.CanClimb = luanoidParams.CanClimb
+        end
 
         if RunService:IsClient() then
             self.NetworkOwner = Players.LocalPlayer.Name
@@ -214,13 +225,13 @@ local Luanoid = Class() do
     function Luanoid:MoveTo(target, timeout)
         self.MoveToTarget = target
         self.MoveToTimeout = timeout or 8
-        self.MoveToTick = tick()
+        self._moveToTickStart = tick()
     end
 
     function Luanoid:CancelMoveTo()
         self.MoveToTarget = nil
         self.MoveToTimeout = 8
-        self.MoveToTick = 0
+        self._moveToTickStart = 0
     end
 
     function Luanoid:SetNetworkOwner(networkOwner)
@@ -250,7 +261,7 @@ local Luanoid = Class() do
             -- TODO: Switch this to PreSimulation once enabled
             self.PreSimConnection = RunService.Heartbeat:Connect(function(dt)
                 if not self.Character.HumanoidRootPart:IsGrounded() then
-                    local newState = self.StateController:Update(dt)
+                    local newState = self.StateController:step(dt)
                     local curState = self.State
                     if newState ~= curState then
                         self.LastState = curState

@@ -20,9 +20,10 @@ end
 local StateController = Class() do
     function StateController:init(luanoid)
         self.Luanoid = luanoid
-        self.AccumulatedTime = 0
-        self.CurrentAccelerationX = 0
-        self.CurrentAccelerationZ = 0
+        self.Ground = nil
+        self._accumulatedTime = 0
+        self._currentAccelerationX = 0
+        self._currentAccelerationZ = 0
         local raycastParams = RaycastParams.new()
         raycastParams.FilterDescendantsInstances = {self.Luanoid.Character}
         raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
@@ -32,7 +33,7 @@ local StateController = Class() do
 
     function StateController:step(dt)
         if self.Luanoid.MoveToTarget then
-            if tick() - self.Luanoid.MoveToTick < self.Luanoid.MoveToTimeout then
+            if tick() - self.Luanoid._moveToTickStart < self.Luanoid.MoveToTimeout then
                 if typeof(self.Luanoid.MoveToTarget) == "Instance" then
                     self.Luanoid.MoveToTarget = self.Luanoid.MoveToTarget.Position
                 end
@@ -50,10 +51,18 @@ local StateController = Class() do
         end
 
         local function castCollideOnly(origin, dir)
+            --[[
+                Shallow copies the original FilterDescendantsInstances table
+                due to objects with CanCollide disabled being inserted which
+                can become CanCollide enabled later.
+            ]]
+            local originalFilter = {table.unpack(self.RaycastParams.FilterDescendantsInstances)}
+
             repeat
                 local result = workspace:Raycast(origin, dir, self.RaycastParams)
                 if result then
                     if result.Instance.CanCollide then
+                        self.RaycastParams.FilterDescendantsInstances = originalFilter
                         return result
                     else
                         table.insert(self.RaycastParams.FilterDescendantsInstances, result.Instance)
@@ -61,6 +70,7 @@ local StateController = Class() do
                         dir = dir.Unit * (dir.Magnitude - (origin - result.Position).Magnitude)
                     end
                 else
+                    self.RaycastParams.FilterDescendantsInstances = originalFilter
                     return nil
                 end
             until not result
@@ -98,6 +108,8 @@ local StateController = Class() do
                             newState = CharacterState.Idling
                         end
                     end
+
+                    self.Ground = raycastResult.Instance
                 else
                     newState = CharacterState.Unsimulated
                 end
@@ -122,23 +134,23 @@ local StateController = Class() do
                 targetVelocity = Vector3.new(self.Luanoid.MoveDir.X, 0, self.Luanoid.MoveDir.Z).Unit * self.Luanoid.WalkSpeed
             end
 
-            self.AccumulatedTime = (self.AccumulatedTime or 0) + dt
+            self._accumulatedTime = (self._accumulatedTime or 0) + dt
 
-            while self.AccumulatedTime >= 1 / 240 do
-                self.AccumulatedTime = self.AccumulatedTime - 1 / 240
-                currentVelocityX, self.CurrentAccelerationX = StepSpring(
+            while self._accumulatedTime >= 1 / 240 do
+                self._accumulatedTime = self._accumulatedTime - 1 / 240
+                currentVelocityX, self._currentAccelerationX = StepSpring(
                     1 / 240,
                     currentVelocityX,
-                    self.CurrentAccelerationX or 0,
+                    self._currentAccelerationX or 0,
                     targetVelocity.X,
                     170,
                     26,
                     0.001
                 )
-                currentVelocityZ, self.CurrentAccelerationZ = StepSpring(
+                currentVelocityZ, self._currentAccelerationZ = StepSpring(
                     1 / 240,
                     currentVelocityZ,
-                    self.CurrentAccelerationZ or 0,
+                    self._currentAccelerationZ or 0,
                     targetVelocity.Z,
                     170,
                     26,
@@ -157,8 +169,8 @@ local StateController = Class() do
             aUp = math.min(aUp, maxUpImpulse)
             aUp = math.max(-1, aUp)
 
-            local aX = self.CurrentAccelerationX
-            local aZ = self.CurrentAccelerationZ
+            local aX = self._currentAccelerationX
+            local aZ = self._currentAccelerationZ
 
             mover.Force = Vector3.new(aX, aUp, aZ) * self.Luanoid.Character.HumanoidRootPart.AssemblyMass
 
