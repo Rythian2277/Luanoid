@@ -94,6 +94,8 @@ local StateController = Class() do
                 if currentVelocityY < 0 then
                     -- We passed the peak of the jump and are now falling downward
                     newState = CharacterState.Unsimulated
+
+                    self.Ground = nil
                 end
             elseif curState ~= CharacterState.Climbing then
                 if raycastResult and (self.Luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
@@ -112,11 +114,15 @@ local StateController = Class() do
                     self.Ground = raycastResult.Instance
                 else
                     newState = CharacterState.Unsimulated
+
+                    self.Ground = nil
                 end
             end
         else
             -- HRP isn't RootPart so Character is likely welded to something
             newState = CharacterState.Unsimulated
+
+            self.Ground = nil
         end
 
         -- State handling logic
