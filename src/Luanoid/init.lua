@@ -13,11 +13,12 @@ local Players = game:GetService("Players")
 local Luanoid = Class() do
     function Luanoid:init(luanoidParams)
         if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
+            local humanoidRootPart = luanoidParams:WaitForChild("HumanoidRootPart")
             self.Character = luanoidParams
-            self.Mover = self.Character.HumanoidRootPart.Mover
-            self.Aligner = self.Character.HumanoidRootPart.Aligner
+			self._mover = humanoidRootPart.Mover
+			self._aligner = humanoidRootPart.Aligner
             self.Animator = self.Character.AnimationController.Animator
-            self.RootPart = self.Character.HumanoidRootPart
+			self.RootPart = humanoidRootPart
         else --// Needs to be created
             luanoidParams = luanoidParams or {}
 
@@ -62,19 +63,13 @@ local Luanoid = Class() do
 
             self.Character.PrimaryPart = humanoidRootPart
 
-            self.Mover = vectorForce
-            self.Aligner = alignOrientation
+            self._mover = vectorForce
+            self._aligner = alignOrientation
             self.Animator = animator
             self.RootPart = humanoidRootPart
         end
 
-        self.Health = luanoidParams.Health or 100
-        self.MaxHealth = luanoidParams.MaxHealth or 100
-        self.WalkSpeed = luanoidParams.WalkSpeed or 16
-        self.JumpPower = luanoidParams.JumpPower or 50
-        self.HipHeight = luanoidParams.HipHeight or 2
-        self.StateController = (luanoidParams.StateController or StateController)(self)
-        self.PreSimConnection = nil
+        self._preSimConnection = nil
         self.JumpInput = false
         self.MoveToTarget = nil
         self.MoveToTimeout = 0
@@ -89,20 +84,36 @@ local Luanoid = Class() do
         self.MoveToFinished = Event()
         self.StateChanged = Event()
 
-        if luanoidParams.AutoRotate == nil then
-            self.AutoRotate = true
+        if type(luanoidParams) == "table" then
+            self.Health = luanoidParams.Health or 100
+            self.MaxHealth = luanoidParams.MaxHealth or 100
+            self.WalkSpeed = luanoidParams.WalkSpeed or 16
+            self.JumpPower = luanoidParams.JumpPower or 50
+            self.HipHeight = luanoidParams.HipHeight or 2
+            self.StateController = (luanoidParams.StateController or StateController)(self)
+
+            if luanoidParams.AutoRotate == nil then
+                self.AutoRotate = true
+            else
+                self.AutoRotate = luanoidParams.AutoRotate
+            end
+            if luanoidParams.CanJump == nil then
+                self.CanJump = true
+            else
+                self.CanJump = luanoidParams.CanJump
+            end
+            if luanoidParams.CanClimb == nil then
+                self.CanClimb = true
+            else
+                self.CanClimb = luanoidParams.CanClimb
+            end
         else
-            self.AutoRotate = luanoidParams.AutoRotate
-        end
-        if luanoidParams.CanJump == nil then
-            self.CanJump = true
-        else
-            self.CanJump = luanoidParams.CanJump
-        end
-        if luanoidParams.CanClimb == nil then
-            self.CanClimb = true
-        else
-            self.CanClimb = luanoidParams.CanClimb
+            self.Health = 100
+            self.MaxHealth = 100
+            self.WalkSpeed = 16
+            self.JumpPower = 50
+            self.HipHeight = 2
+            self.StateController = StateController(self)
         end
 
         if RunService:IsClient() then
@@ -134,7 +145,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:Destroy()
-        self.Aligner.Attachment1:Destroy()
+        self._aligner.Attachment1:Destroy()
         self.Character:Destroy()
         self.StateController:Destroy()
         self:PauseSimulation()
@@ -249,17 +260,17 @@ local Luanoid = Class() do
     end
 
     function Luanoid:PauseSimulation()
-        local connection = self.PreSimConnection
+        local connection = self._preSimConnection
         if connection then
             connection:Disconnect()
         end
     end
 
     function Luanoid:ResumeSimulation()
-        local connection = self.PreSimConnection
+        local connection = self._preSimConnection
         if not connection or (connection and not connection.Connected) then
             -- TODO: Switch this to PreSimulation once enabled
-            self.PreSimConnection = RunService.Heartbeat:Connect(function(dt)
+            self._preSimConnection = RunService.Heartbeat:Connect(function(dt)
                 if not self.Character.HumanoidRootPart:IsGrounded() then
                     local newState = self.StateController:step(dt)
                     local curState = self.State
