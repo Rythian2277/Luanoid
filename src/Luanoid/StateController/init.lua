@@ -126,8 +126,8 @@ local StateController = Class() do
         end
 
         -- State handling logic
-        local mover = self.Luanoid.Mover
-        local aligner = self.Luanoid.Aligner
+        local mover = self.Luanoid._mover
+        local aligner = self.Luanoid._aligner
 
         if newState == CharacterState.Idling or newState == CharacterState.Walking then
 
