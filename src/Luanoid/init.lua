@@ -119,8 +119,12 @@ local Luanoid = Class() do
         local localNetworkOwner
         if RunService:IsClient() then
             localNetworkOwner = Players.LocalPlayer
-            self:SetNetworkOwner(localNetworkOwner)
         end
+        --[[
+            If we are on a Client the localNetworkOwner is the player while on
+            the server the localNetworkOwner is nil which reprents server.
+        ]]
+        self:SetNetworkOwner(localNetworkOwner)
 
         self.Character.AncestryChanged:Connect(function()
             if self.Character:IsDescendantOf(game.Workspace) and self:GetNetworkOwner() == localNetworkOwner then
@@ -245,7 +249,11 @@ local Luanoid = Class() do
     end
 
     function Luanoid:GetNetworkOwner()
-        return self.RootPart:GetAttribute("NetworkOwner")
+        local networkOwner = self.RootPart:GetAttribute("NetworkOwner")
+        if networkOwner then
+            networkOwner = Players[networkOwner]
+        end
+        return networkOwner
     end
 
     function Luanoid:SetNetworkOwner(networkOwner)
