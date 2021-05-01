@@ -20,7 +20,7 @@ end
 local StateController = Class() do
     function StateController:init(luanoid)
         self.Luanoid = luanoid
-        self.Ground = nil
+        self.Floor = nil
         self._accumulatedTime = 0
         self._currentAccelerationX = 0
         self._currentAccelerationZ = 0
@@ -95,7 +95,7 @@ local StateController = Class() do
                     -- We passed the peak of the jump and are now falling downward
                     newState = CharacterState.Unsimulated
 
-                    self.Ground = nil
+                    self.Floor = nil
                 end
             elseif curState ~= CharacterState.Climbing then
                 if raycastResult and (self.Luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
@@ -111,18 +111,18 @@ local StateController = Class() do
                         end
                     end
 
-                    self.Ground = raycastResult.Instance
+                    self.Floor = raycastResult.Instance
                 else
                     newState = CharacterState.Unsimulated
 
-                    self.Ground = nil
+                    self.Floor = nil
                 end
             end
         else
             -- HRP isn't RootPart so Character is likely welded to something
             newState = CharacterState.Unsimulated
 
-            self.Ground = nil
+            self.Floor = nil
         end
 
         -- State handling logic
