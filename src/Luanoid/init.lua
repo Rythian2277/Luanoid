@@ -116,30 +116,29 @@ local Luanoid = Class() do
             self.StateController = StateController(self)
         end
 
+        local localNetworkOwner
         if RunService:IsClient() then
-            self.NetworkOwner = Players.LocalPlayer.Name
+            localNetworkOwner = Players.LocalPlayer
+            self:SetNetworkOwner(localNetworkOwner)
         end
 
         self.Character.AncestryChanged:Connect(function()
-            if self.Character:IsDescendantOf(game.Workspace) and self.Character:GetAttribute("NetworkOwner") == self.NetworkOwner then
+            if self.Character:IsDescendantOf(game.Workspace) and self:GetNetworkOwner() == localNetworkOwner then
                 self:ResumeSimulation()
             else
                 self:PauseSimulation()
-            end
-            if self.Character:IsDescendantOf(game.Workspace) then
-                self:SetNetworkOwner(nil)
             end
         end)
 
         self.Character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
-            if self.Character:GetAttribute("NetworkOwner") == self.NetworkOwner then
+            if self:GetNetworkOwner() == localNetworkOwner then
                 self:ResumeSimulation()
             else
                 self:PauseSimulation()
             end
         end)
 
-        if self.Character:GetAttribute("NetworkOwner") == self.NetworkOwner then
+        if self:GetNetworkOwner() == localNetworkOwner and self.Character:IsDescendantOf(game.Workspace) then
             self:ResumeSimulation()
         end
     end
@@ -245,6 +244,10 @@ local Luanoid = Class() do
         self._moveToTickStart = 0
     end
 
+    function Luanoid:GetNetworkOwner()
+        return self.RootPart:GetAttribute("NetworkOwner")
+    end
+
     function Luanoid:SetNetworkOwner(networkOwner)
         assert(networkOwner == nil or (typeof(networkOwner) == "Instance" and networkOwner:IsA("Player")), "Expected nil or Player as Argument #1, instead got ".. typeof(networkOwner))
         local character = self.Character
@@ -253,7 +256,7 @@ local Luanoid = Class() do
         else
             character:SetAttribute("NetworkOwner", nil)
         end
-        if character:IsDescendantOf(workspace) then
+        if character:IsDescendantOf(workspace) and RunService:IsServer() then
             character.HumanoidRootPart:SetNetworkOwner(networkOwner)
         end
         return self
@@ -288,4 +291,3 @@ local Luanoid = Class() do
 end
 
 return Luanoid
-
