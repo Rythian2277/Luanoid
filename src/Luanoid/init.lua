@@ -2,8 +2,8 @@
 --// Creator: Rythian Smythe / Rythian2277
 --// Date: April 18, 2021
 
-local Class = require(3696101309)
-local Event = require(3908178708)
+local Class = require(script.Class)
+local Event = require(script.Event)
 local StateController = require(script.StateController)
 local CharacterState = require(script.CharacterState)
 
@@ -164,7 +164,6 @@ local Luanoid = Class() do
         local humanoidRootPart = character.HumanoidRootPart
         local rigParts = self.RigParts
 
-        rig = rig:Clone()
         for _,v in pairs(rig:GetDescendants()) do
             if v:IsA("Motor6D") then
                 if v.Part0.Name == "HumanoidRootPart" then

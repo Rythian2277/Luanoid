@@ -1,4 +1,4 @@
-local Class = require(3696101309)
+local Class = require(script.Parent.Class)
 local CharacterState = require(script.Parent.CharacterState)
 
 local function StepSpring(framerate, position, velocity, destination, stiffness, damping, precision)
@@ -93,7 +93,7 @@ local StateController = Class() do
             if curState == CharacterState.Jumping then
                 if currentVelocityY < 0 then
                     -- We passed the peak of the jump and are now falling downward
-                    newState = CharacterState.Unsimulated
+                    newState = CharacterState.Falling
 
                     self.Floor = nil
                 end
@@ -113,7 +113,7 @@ local StateController = Class() do
 
                     self.Floor = raycastResult.Instance
                 else
-                    newState = CharacterState.Unsimulated
+                    newState = CharacterState.Falling
 
                     self.Floor = nil
                 end
@@ -200,7 +200,7 @@ local StateController = Class() do
                 aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), self.Luanoid.LookDir)
             end
 
-        elseif newState == CharacterState.Unsimulated then
+        elseif newState == CharacterState.Falling or newState == CharacterState.Unsimulated then
 
             mover.Force = Vector3.new()
 
