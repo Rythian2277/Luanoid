@@ -1,0 +1,26 @@
+{
+    "name": "Luanoid - Testing",
+    "tree": {
+      "$className": "DataModel",
+
+      "ReplicatedStorage": {
+        "$className": "ReplicatedStorage",
+
+        "Luanoid": {
+          "$path": "src/Luanoid",
+
+          "Class": {
+            "$path": "Dependencies/src/Classes/Class.lua"
+          },
+          
+          "Event": {
+            "$path": "Dependencies/src/Classes/Event.lua"
+          }
+        },
+
+        "Dogu15": {
+          "$path": "Examples/Dogu15.lua"
+        }
+      }
+    }
+  }

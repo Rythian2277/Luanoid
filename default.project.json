@@ -1,12 +1,14 @@
 {
   "name": "Luanoid",
   "tree": {
-    "$className": "DataModel",
-    "ReplicatedStorage": {
-      "$className": "ReplicatedStorage",
-      "Luanoid": {
-        "$path": "src/Luanoid"
-      }
+    "$path": "src",
+
+    "Class": {
+      "$path": "Dependencies/src/Classes/Class.lua"
+    },
+    
+    "Event": {
+      "$path": "Dependencies/src/Classes/Event.lua"
     }
   }
 }
