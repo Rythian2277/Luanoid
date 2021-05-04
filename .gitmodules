@@ -1,3 +1,3 @@
-[submodule "Dependencies"]
-	path = Dependencies
+[submodule "Opensource-Modules"]
+	path = Opensource-Modules
 	url = https://github.com/Rythian2277/Opensource-Modules

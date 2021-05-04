@@ -4,11 +4,11 @@
     "$path": "src",
 
     "Class": {
-      "$path": "Dependencies/src/Classes/Class.lua"
+      "$path": "Opensource-Modules/src/Classes/Class.lua"
     },
     
     "Event": {
-      "$path": "Dependencies/src/Classes/Event.lua"
+      "$path": "Opensource-Modules/src/Classes/Event.lua"
     }
   }
 }
