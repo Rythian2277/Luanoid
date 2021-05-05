@@ -20,7 +20,6 @@ end
 local StateController = Class() do
     function StateController:init(luanoid)
         self.Luanoid = luanoid
-        self.Floor = nil
         self._accumulatedTime = 0
         self._currentAccelerationX = 0
         self._currentAccelerationZ = 0
@@ -44,7 +43,7 @@ local StateController = Class() do
                     luanoid:CancelMoveTo()
                     luanoid.MoveToFinished:Fire(true)
                 else
-                    luanoid.MoveDir = (luanoid.MoveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
+                    luanoid.MoveDirection = (luanoid.MoveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
                 end
             else
                 luanoid:CancelMoveTo()
@@ -97,7 +96,7 @@ local StateController = Class() do
                     -- We passed the peak of the jump and are now falling downward
                     newState = CharacterState.Falling
 
-                    self.Floor = nil
+                    luanoid.Floor = nil
                 end
             elseif curState ~= CharacterState.Climbing then
                 if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
@@ -106,25 +105,25 @@ local StateController = Class() do
                         luanoid.JumpInput = false
                         newState = CharacterState.Jumping
                     else
-                        if luanoid.MoveDir.Magnitude > 0 then
+                        if luanoid.MoveDirection.Magnitude > 0 then
                             newState = CharacterState.Walking
                         else
                             newState = CharacterState.Idling
                         end
                     end
 
-                    self.Floor = raycastResult.Instance
+                    luanoid.Floor = raycastResult.Instance
                 else
                     newState = CharacterState.Falling
 
-                    self.Floor = nil
+                    luanoid.Floor = nil
                 end
             end
         else
             -- HRP isn't RootPart so Character is likely welded to something
             newState = CharacterState.Unsimulated
 
-            self.Floor = nil
+            luanoid.Floor = nil
         end
 
         -- State handling logic
@@ -137,9 +136,9 @@ local StateController = Class() do
             local groundPos = raycastResult.Position
             local targetVelocity = Vector3.new()
 
-            luanoid.MoveDir = Vector3.new(luanoid.MoveDir.X, 0, luanoid.MoveDir.Z)
-            if luanoid.MoveDir.Magnitude > 0 then
-                targetVelocity = Vector3.new(luanoid.MoveDir.X, 0, luanoid.MoveDir.Z).Unit * luanoid.WalkSpeed
+            luanoid.MoveDirection = Vector3.new(luanoid.MoveDirection.X, 0, luanoid.MoveDirection.Z)
+            if luanoid.MoveDirection.Magnitude > 0 then
+                targetVelocity = Vector3.new(luanoid.MoveDirection.X, 0, luanoid.MoveDirection.Z).Unit * luanoid.WalkSpeed
             end
 
             self._accumulatedTime = (self._accumulatedTime or 0) + dt
@@ -183,12 +182,12 @@ local StateController = Class() do
             mover.Force = Vector3.new(aX, aUp, aZ) * luanoid.Character.HumanoidRootPart.AssemblyMass
 
             -- Look direction stuff
-            if luanoid.MoveDir.Magnitude > 0 and luanoid.AutoRotate then
-                luanoid.LookDir = luanoid.MoveDir
+            if luanoid.MoveDirection.Magnitude > 0 and luanoid.AutoRotate then
+                luanoid.LookDirection = luanoid.MoveDirection
             end
 
-            if luanoid.LookDir.Magnitude > 0 then
-                aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDir)
+            if luanoid.LookDirection.Magnitude > 0 then
+                aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
             end
 
         elseif newState == CharacterState.Jumping then
@@ -198,8 +197,8 @@ local StateController = Class() do
                 luanoid.Character.HumanoidRootPart:ApplyImpulse(Vector3.new(0, luanoid.JumpPower * luanoid.Character.HumanoidRootPart.AssemblyMass, 0))
             end
 
-            if luanoid.LookDir.Magnitude > 0 then
-                aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDir)
+            if luanoid.LookDirection.Magnitude > 0 then
+                aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
             end
 
         elseif newState == CharacterState.Falling or newState == CharacterState.Unsimulated then

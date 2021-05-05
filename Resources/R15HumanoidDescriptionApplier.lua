@@ -1,7 +1,8 @@
 --[[
     Applies HumanoidDescriptions to R15-like rigs such as Dogu15. Due to
     Luanoids not using Humanoids this will not apply Shirts, Pants, or
-    T-Shirts.
+    T-Shirts. This will not be implemented in the form of ApplyDescription()
+    due to Luanoid's support for rigs beyond R6 and R15.
 ]]
 
 local InsertService = game:GetService("InsertService")
@@ -89,6 +90,7 @@ return function(luanoid, humanoidDescription)
         for _,accessoryId in pairs(accessoryGroup) do
             accessoryId = tonumber(accessoryId)
 
+            -- Sometimes the accessoryId is nil, not sure why
             if accessoryId then
                 local accessory = InsertService:LoadAsset(accessoryId):FindFirstChildWhichIsA("Accessory")
                 luanoid:AddAccessory(accessory)

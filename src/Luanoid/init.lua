@@ -74,13 +74,14 @@ local Luanoid = Class() do
         end
 
         self._preSimConnection = nil
+        self.Floor = nil
         self.JumpInput = false
         self.MoveToTarget = nil
         self.MoveToTimeout = 0
         self._moveToTickStart = 0
         self.RigParts = {}
-        self.MoveDir = Vector3.new()
-        self.LookDir = Vector3.new()
+        self.MoveDirection = Vector3.new()
+        self.LookDirection = Vector3.new()
         self.LastState = CharacterState.Idling
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
