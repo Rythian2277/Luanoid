@@ -61,6 +61,10 @@ local Luanoid = Class() do
             local animator = Instance.new("Animator")
             animator.Parent = animationController
 
+            local accessoriesFolder = Instance.new("Folder")
+            accessoriesFolder.Name = "Accessories"
+            accessoriesFolder.Parent = self.Character
+
             self.Character.PrimaryPart = humanoidRootPart
 
             self._mover = vectorForce
@@ -81,8 +85,11 @@ local Luanoid = Class() do
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
         self.PlayingAnimations = {}
+
         self.MoveToFinished = Event()
         self.StateChanged = Event()
+        self.AccessoryEquipped = Event()
+        self.AccessoryUnequipping = Event()
 
         if type(luanoidParams) == "table" then
             self.Health = luanoidParams.Health or 100
@@ -127,8 +134,19 @@ local Luanoid = Class() do
         self:SetNetworkOwner(localNetworkOwner)
 
         self.Character.AncestryChanged:Connect(function()
-            if self.Character:IsDescendantOf(game.Workspace) and self:GetNetworkOwner() == localNetworkOwner then
-                self:ResumeSimulation()
+            if self.Character:IsDescendantOf(game.Workspace) then
+                if RunService:IsServer() and not self.RootPart:IsGrounded() then
+                    --[[
+                        Not sure why waiting fixes automatic NetworkOwnership
+                        not properly being disabled but it just works.
+                    ]]
+                    RunService.Heartbeat:Wait()
+                    self.RootPart:SetNetworkOwner(nil)
+                end
+
+                if self:GetNetworkOwner() == localNetworkOwner then
+                    self:ResumeSimulation()
+                end
             else
                 self:PauseSimulation()
             end
@@ -155,7 +173,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:MountRig(rig)
-        assert(typeof(rig) == "Instance", "Expected Instance as Argument #1, instead got ".. typeof(rig))
+        assert(typeof(rig) == "Instance" and rig:IsA("Model"), "Expected Model as Argument #1")
         assert(rig:FindFirstChild("HumanoidRootPart"), "Expected rig to have a HumanoidRootPart")
 
         self:UnmountRig()
@@ -183,6 +201,8 @@ local Luanoid = Class() do
         humanoidRootPart.Size = rig.HumanoidRootPart.Size
 
         rig:Destroy()
+
+        return self
     end
 
     function Luanoid:UnmountRig()
@@ -194,6 +214,7 @@ local Luanoid = Class() do
 
     function Luanoid:LoadAnimation(animation, name)
         assert(typeof(animation) == "Instance" and animation:IsA("Animation"), "Expected Animation as Argument #1")
+
         name = name or animation.Name
         local animationTrack = self.Animator:LoadAnimation(animation)
         self.AnimationTracks[name] = self.AnimationTracks[name] or {}
@@ -239,12 +260,94 @@ local Luanoid = Class() do
         self.MoveToTarget = target
         self.MoveToTimeout = timeout or 8
         self._moveToTickStart = tick()
+        return self
     end
 
     function Luanoid:CancelMoveTo()
         self.MoveToTarget = nil
         self.MoveToTimeout = 8
         self._moveToTickStart = 0
+        return self
+    end
+
+    function Luanoid:AddAccessory(accessory, base, pivot)
+        local character = self.Character
+
+        assert(
+            typeof(accessory) == "Instance"
+            and accessory:IsA("Instance"),
+            "Expected Instance as Argument #1"
+        )
+
+        local primaryPart = accessory
+        if accessory:IsA("Accessory") then
+            -- Accessory is a Roblox accessory
+            primaryPart = accessory.Handle
+            local attachment0 = primaryPart:FindFirstChildWhichIsA("Attachment")
+            local attachment1 = self.Character:FindFirstChild(attachment0.Name, true)
+            base = attachment1.Parent
+
+            primaryPart.CFrame = attachment1.WorldCFrame * attachment0.CFrame:Inverse()
+        else
+            -- Accessory is a BasePart or Model
+            assert(
+                typeof(base) == "Instance",
+                "Expected Instance as Argument #2"
+            )
+            assert(
+                base:IsDescendantOf(character),
+                "Expected Argument #2 to be descendant of Luanoid"
+            )
+
+            if accessory:IsA("Model") then
+                primaryPart = accessory.PrimaryPart
+            end
+            if not pivot then
+                if base:IsA("BasePart") then
+                    pivot = base.CFrame
+                elseif base:IsA("Attachment") then
+                    pivot = base.WorldCFrame
+                    base = base.Parent
+                end
+            end
+
+            accessory:PivotTo(pivot)
+        end
+        local weldConstraint = Instance.new("WeldConstraint")
+        weldConstraint.Part0 = primaryPart
+        weldConstraint.Part1 = base
+        weldConstraint.Parent = primaryPart
+        accessory.Parent = character.Accessories
+
+        self.AccessoryEquipped:Fire(accessory)
+
+        return self
+    end
+
+    function Luanoid:RemoveAccessory(accessory)
+        assert(
+            typeof(accessory) == "Instance",
+            "Expected Instance as Argument #1"
+        )
+        assert(
+            accessory:IsDescendantOf(self.Character.Accessories),
+            "Expected accessory to be descendant of Luanoid.Accessories"
+        )
+
+        self.AccessoryUnequipping:Fire(accessory)
+        accessory:Destroy()
+
+        return self
+    end
+
+    function Luanoid:GetAccessories()
+        return self.Character.Accessories:GetChildren()
+    end
+
+    function Luanoid:RemoveAccessories()
+        for _,accessory in pairs(self:GetAccessories()) do
+            self:RemoveAccessory(accessory)
+        end
     end
 
     function Luanoid:GetNetworkOwner()
@@ -256,7 +359,12 @@ local Luanoid = Class() do
     end
 
     function Luanoid:SetNetworkOwner(networkOwner)
-        assert(networkOwner == nil or (typeof(networkOwner) == "Instance" and networkOwner:IsA("Player")), "Expected nil or Player as Argument #1, instead got ".. typeof(networkOwner))
+        assert(
+            networkOwner == nil
+            or (typeof(networkOwner) == "Instance" and networkOwner:IsA("Player")),
+            "Expected nil or Player as Argument #1"
+        )
+
         local character = self.Character
         if networkOwner then
             character:SetAttribute("NetworkOwner", networkOwner.Name)
@@ -267,6 +375,15 @@ local Luanoid = Class() do
             character.HumanoidRootPart:SetNetworkOwner(networkOwner)
         end
         return self
+    end
+
+    function Luanoid:ChangeState(newState)
+        local curState = self.State
+        if newState ~= curState then
+            self.LastState = curState
+            self.State = newState
+            self.StateChanged:Fire(self.State, self.LastState)
+        end
     end
 
     function Luanoid:PauseSimulation()
@@ -282,15 +399,7 @@ local Luanoid = Class() do
             -- TODO: Switch this to PreSimulation once enabled
             self._preSimConnection = RunService.Heartbeat:Connect(function(dt)
                 if not self.Character.HumanoidRootPart:IsGrounded() then
-                    local newState = self.StateController:step(dt)
-                    local curState = self.State
-                    if newState ~= curState then
-                        self.LastState = curState
-                        self.State = newState
-                        self.StateChanged:Fire(self.State, self.LastState)
-                        self:StopAnimation(curState.Name)
-                        self:PlayAnimation(newState.Name)
-                    end
+                    self.StateController:step(dt)
                 end
             end)
         end

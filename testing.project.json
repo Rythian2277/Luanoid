@@ -18,8 +18,8 @@
           }
         },
 
-        "Dogu15": {
-          "$path": "Examples/Dogu15.lua"
+        "LuanoidResources": {
+          "$path": "Resources"
         }
       }
     }

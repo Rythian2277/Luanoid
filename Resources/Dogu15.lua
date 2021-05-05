@@ -3,7 +3,11 @@
     of Dogutsune's Dogu15 rig which is a R15 rig with mesh deformation. This
     example depends on HttpService being enabled to insert the rig.
 
+    Dogu15 Rig:
     https://devforum.roblox.com/t/dogu15-an-improved-r15-rig-mesh-deformation/532832
+
+    Modified Rig:
+    https://www.roblox.com/library/6324529033/R15Rig
 ]]
 
 local ANIMATIONS = {
