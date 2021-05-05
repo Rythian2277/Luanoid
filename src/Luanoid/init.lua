@@ -75,10 +75,10 @@ local Luanoid = Class() do
 
         self._preSimConnection = nil
         self.Floor = nil
-        self.JumpInput = false
-        self.MoveToTarget = nil
-        self.MoveToTimeout = 0
-        self._moveToTickStart = 0
+        self._jumpInput = false
+        self._walkToTarget = nil
+        self._walkToTimeout = 0
+        self._walkToTickStart = 0
         self.RigParts = {}
         self.MoveDirection = Vector3.new()
         self.LookDirection = Vector3.new()
@@ -86,7 +86,7 @@ local Luanoid = Class() do
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
 
-        self.MoveToFinished = Event()
+        self.WalkToFinished = Event()
         self.StateChanged = Event()
         self.AccessoryEquipped = Event()
         self.AccessoryUnequipping = Event()
@@ -172,16 +172,21 @@ local Luanoid = Class() do
         self:PauseSimulation()
     end
 
-    function Luanoid:MountRig(rig)
+    function Luanoid:SetRig()
+        
+    end
+
+    function Luanoid:BuildRigFromAttachments(rig)
         assert(typeof(rig) == "Instance" and rig:IsA("Model"), "Expected Model as Argument #1")
         assert(rig:FindFirstChild("HumanoidRootPart"), "Expected rig to have a HumanoidRootPart")
 
-        self:UnmountRig()
+        self:RemoveRig()
 
         local character = self.Character
-        local humanoidRootPart = character.HumanoidRootPart
+        local humanoidRootPart = self.RootPart
         local rigParts = self.RigParts
 
+        --[[
         for _,v in pairs(rig:GetDescendants()) do
             if v:IsA("Motor6D") then
                 if v.Part0.Name == "HumanoidRootPart" then
@@ -201,11 +206,12 @@ local Luanoid = Class() do
         humanoidRootPart.Size = rig.HumanoidRootPart.Size
 
         rig:Destroy()
+        ]]
 
         return self
     end
 
-    function Luanoid:UnmountRig()
+    function Luanoid:RemoveRig()
         for _,limb in pairs(self.RigParts) do
             limb:Destroy()
         end
@@ -261,22 +267,22 @@ local Luanoid = Class() do
 
     function Luanoid:Jump()
         if self.CanJump then
-            self.JumpInput = true
+            self._jumpInput = true
         end
         return self
     end
 
-    function Luanoid:MoveTo(target, timeout)
-        self.MoveToTarget = target
-        self.MoveToTimeout = timeout or 8
-        self._moveToTickStart = tick()
+    function Luanoid:WalkTo(target, timeout)
+        self._walkToTarget = target
+        self._walkToTimeout = timeout or 8
+        self._walkToTickStart = tick()
         return self
     end
 
-    function Luanoid:CancelMoveTo()
-        self.MoveToTarget = nil
-        self.MoveToTimeout = 8
-        self._moveToTickStart = 0
+    function Luanoid:CancelWalkTo()
+        self._walkToTarget = nil
+        self._walkToTimeout = 8
+        self._walkToTickStart = 0
         return self
     end
 
@@ -350,14 +356,14 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:GetAccessories()
-        return self.Character.Accessories:GetChildren()
-    end
-
     function Luanoid:RemoveAccessories()
         for _,accessory in pairs(self:GetAccessories()) do
             self:RemoveAccessory(accessory)
         end
+    end
+
+    function Luanoid:GetAccessories()
+        return self.Character.Accessories:GetChildren()
     end
 
     function Luanoid:GetNetworkOwner()

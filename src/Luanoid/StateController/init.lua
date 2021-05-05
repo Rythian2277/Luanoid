@@ -33,21 +33,21 @@ local StateController = Class() do
     function StateController:step(dt)
         local luanoid = self.Luanoid
 
-        if luanoid.MoveToTarget then
-            if tick() - luanoid._moveToTickStart < luanoid.MoveToTimeout then
-                if typeof(luanoid.MoveToTarget) == "Instance" then
-                    luanoid.MoveToTarget = luanoid.MoveToTarget.Position
+        if luanoid._walkToTarget then
+            if tick() - luanoid._walkToTickStart < luanoid._walkToTimeout then
+                if typeof(luanoid._walkToTarget) == "Instance" then
+                    luanoid._walkToTarget = luanoid._walkToTarget.Position
                 end
 
-                if math.abs(luanoid.MoveToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(luanoid.MoveToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(luanoid.MoveToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
-                    luanoid:CancelMoveTo()
-                    luanoid.MoveToFinished:Fire(true)
+                if math.abs(luanoid._walkToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(luanoid._walkToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(luanoid._walkToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
+                    luanoid:CancelWalkTo()
+                    luanoid.WalkToFinished:Fire(true)
                 else
-                    luanoid.MoveDirection = (luanoid.MoveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
+                    luanoid.MoveDirection = (luanoid._walkToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
                 end
             else
-                luanoid:CancelMoveTo()
-                luanoid.MoveToFinished:Fire(false)
+                luanoid:CancelWalkTo()
+                luanoid.WalkToFinished:Fire(false)
             end
         end
 
@@ -101,8 +101,8 @@ local StateController = Class() do
             elseif curState ~= CharacterState.Climbing then
                 if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
                     -- We are grounded
-                    if luanoid.JumpInput then
-                        luanoid.JumpInput = false
+                    if luanoid._jumpInput then
+                        luanoid._jumpInput = false
                         newState = CharacterState.Jumping
                     else
                         if luanoid.MoveDirection.Magnitude > 0 then
