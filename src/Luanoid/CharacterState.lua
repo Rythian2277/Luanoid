@@ -1,5 +1,5 @@
 return {
-    Unsimulated = {Name = "Unsimulated"},
+    Physics = {Name = "Physics"},
     Idling = {Name = "Idling"},
     Walking = {Name = "Walking"},
     Jumping = {Name = "Jumping"},
@@ -7,5 +7,7 @@ return {
     Falling = {Name = "Falling"},
     -- Swimming = {Name = "Swimming"},
     -- SwimIdling = {Name = "SwimIdling"},
-    -- Climbing = {Name = "Climbing"}
+    -- Climbing = {Name = "Climbing"},
+    Ragdoll = {Name = "Ragdoll"},
+    Dead = {Name = "Dead"},
 }

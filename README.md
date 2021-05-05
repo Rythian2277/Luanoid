@@ -26,9 +26,9 @@ Proper documentation page will be setup later.
   - `VectorForce`_mover: Levitates the Luanoid
   - `AlignOrientation`_aligner: Keeps the Luanoid upright
   - `RBXScriptConnection`_preSimConnection
-  - `number`_walkToTickStart: Time `WalkTo()` was called
-  - `Vector3`|`BasePart`_walkToTarget: WalkTo goal
-  - `number`_walkToTimeout: Max time spent walking to target
+  - `number`_moveToTickStart: Time `MoveTo()` was called
+  - `Vector3`|`BasePart`_moveToTarget: MoveTo goal
+  - `number`_moveToTimeout: Max time spent walking to target
   - `boolean`_jumpInput
   - `Model`Character
   - `Animator`Animator
@@ -47,8 +47,6 @@ Proper documentation page will be setup later.
   - `number`HipHeight
   - `StateController`StateController
   - `boolean`AutoRotate: Look in the direction walking
-  - `boolean`CanJump
-  - `boolean`CanClimb
 - Methods
   - Destroy()
   - SetRig(`Model`rig)
@@ -60,8 +58,9 @@ Proper documentation page will be setup later.
   - UnloadAnimation(`string`animationName)
   - UnloadAnimations()
   - Jump()
-  - WalkTo(`Vector3`|`BasePart`, `number?`)
-  - CancelWalkTo()
+  - Ragdoll()
+  - MoveTo(`Vector3`|`BasePart`, `number?`)
+  - CancelMoveTo()
   - AddAccessory(`BasePart`|`Model`|`Accessory`)
   - RemoveAccessory(`BasePart`|`Model`|`Accessory`)
   - RemoveAccessories()
@@ -72,7 +71,7 @@ Proper documentation page will be setup later.
   - PauseSimulation()
   - ResumeSimulation()
 - Events
-  - WalkToFinished: `boolean`success
+  - MoveToFinished: `boolean`success
   - StateChanged: `Enum`newState, `Enum`previousState
   - AccessoryEquipped: `Instance`accessory
   - AccessoryUnequipping: `Instance`accessory
@@ -86,8 +85,10 @@ All StateControllers require a `step()` method to be defined.
 
 ### CharacterState
 
-- Unsimulated
+- Physics
 - Idling
 - Walking
 - Jumping
 - Falling
+- Ragdoll
+- Dead

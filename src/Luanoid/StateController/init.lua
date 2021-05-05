@@ -33,21 +33,21 @@ local StateController = Class() do
     function StateController:step(dt)
         local luanoid = self.Luanoid
 
-        if luanoid._walkToTarget then
-            if tick() - luanoid._walkToTickStart < luanoid._walkToTimeout then
-                if typeof(luanoid._walkToTarget) == "Instance" then
-                    luanoid._walkToTarget = luanoid._walkToTarget.Position
+        if luanoid._moveToTarget then
+            if tick() - luanoid._moveToTickStart < luanoid._moveToTimeout then
+                if typeof(luanoid._moveToTarget) == "Instance" then
+                    luanoid._moveToTarget = luanoid._moveToTarget.Position
                 end
 
-                if math.abs(luanoid._walkToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(luanoid._walkToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(luanoid._walkToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
-                    luanoid:CancelWalkTo()
-                    luanoid.WalkToFinished:Fire(true)
+                if math.abs(luanoid._moveToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(luanoid._moveToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(luanoid._moveToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
+                    luanoid:CancelMoveTo()
+                    luanoid.MoveToFinished:Fire(true)
                 else
-                    luanoid.MoveDirection = (luanoid._walkToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
+                    luanoid.MoveDirection = (luanoid._moveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
                 end
             else
-                luanoid:CancelWalkTo()
-                luanoid.WalkToFinished:Fire(false)
+                luanoid:CancelMoveTo()
+                luanoid.MoveToFinished:Fire(false)
             end
         end
 
@@ -90,46 +90,64 @@ local StateController = Class() do
         local curState = luanoid.State
         local newState = curState
 
-        if luanoid.Character.HumanoidRootPart:GetRootPart() == luanoid.Character.HumanoidRootPart then
-            if curState == CharacterState.Jumping then
-                if currentVelocityY < 0 then
-                    -- We passed the peak of the jump and are now falling downward
-                    newState = CharacterState.Falling
-
-                    luanoid.Floor = nil
-                end
-            elseif curState ~= CharacterState.Climbing then
-                if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
-                    -- We are grounded
-                    if luanoid._jumpInput then
-                        luanoid._jumpInput = false
-                        newState = CharacterState.Jumping
-                    else
-                        if luanoid.MoveDirection.Magnitude > 0 then
-                            newState = CharacterState.Walking
-                        else
-                            newState = CharacterState.Idling
-                        end
-                    end
-
-                    luanoid.Floor = raycastResult.Instance
-                else
-                    newState = CharacterState.Falling
-
-                    luanoid.Floor = nil
-                end
-            end
-        else
-            -- HRP isn't RootPart so Character is likely welded to something
-            newState = CharacterState.Unsimulated
-
-            luanoid.Floor = nil
-        end
-
-        -- State handling logic
         local mover = luanoid._mover
         local aligner = luanoid._aligner
 
+        --[[
+            Some states are unique and are never entered through this
+            StateController. These states get priority over the rest of the
+            state handling logic.
+        ]]
+        if curState == CharacterState.Ragdoll then
+            mover.Enabled = false
+            aligner.Enabled = false
+            luanoid:Ragdoll(true)
+            return curState
+        end
+
+        if luanoid.Health <= 0 then
+            newState = CharacterState.Dead
+        else
+            if luanoid.Character.HumanoidRootPart:GetRootPart() == luanoid.Character.HumanoidRootPart then
+                if curState == CharacterState.Jumping then
+                    if currentVelocityY < 0 then
+                        -- We passed the peak of the jump and are now falling downward
+                        newState = CharacterState.Falling
+
+                        luanoid.Floor = nil
+                    end
+                elseif curState ~= CharacterState.Climbing then
+                    if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
+                        -- We are grounded
+                        if luanoid._jumpInput then
+                            luanoid._jumpInput = false
+                            newState = CharacterState.Jumping
+                        else
+                            if luanoid.MoveDirection.Magnitude > 0 then
+                                newState = CharacterState.Walking
+                            else
+                                newState = CharacterState.Idling
+                            end
+                        end
+
+                        luanoid.Floor = raycastResult.Instance
+                    else
+                        newState = CharacterState.Falling
+
+                        luanoid.Floor = nil
+                    end
+                end
+            else
+                -- HRP isn't RootPart so Character is likely welded to something
+                newState = CharacterState.Physics
+
+                luanoid.Floor = nil
+            end
+        end
+
+        -- State handling logic
+        mover.Enabled = true
+        aligner.Enabled = true
         if newState == CharacterState.Idling or newState == CharacterState.Walking then
 
             -- Luanoid calculations used for idle/walking state
@@ -192,7 +210,7 @@ local StateController = Class() do
 
         elseif newState == CharacterState.Jumping then
 
-            mover.Force = Vector3.new()
+            mover.Enabled = false
             if curState ~= CharacterState.Jumping then
                 luanoid.Character.HumanoidRootPart:ApplyImpulse(Vector3.new(0, luanoid.JumpPower * luanoid.Character.HumanoidRootPart.AssemblyMass, 0))
             end
@@ -201,9 +219,16 @@ local StateController = Class() do
                 aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
             end
 
-        elseif newState == CharacterState.Falling or newState == CharacterState.Unsimulated then
+        elseif newState == CharacterState.Falling or newState == CharacterState.Physics then
 
-            mover.Force = Vector3.new()
+            mover.Enabled = false
+
+        elseif newState == CharacterState.Dead then
+
+            -- Stop the simulation and begin ragdolling the Luanoid
+            mover.Enabled = false
+            luanoid:PauseSimulation()
+            luanoid:Ragdoll(true)
 
         end
 

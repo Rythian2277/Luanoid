@@ -76,17 +76,18 @@ local Luanoid = Class() do
         self._preSimConnection = nil
         self.Floor = nil
         self._jumpInput = false
-        self._walkToTarget = nil
-        self._walkToTimeout = 0
-        self._walkToTickStart = 0
+        self._moveToTarget = nil
+        self._moveToTimeout = 0
+        self._moveToTickStart = 0
         self.RigParts = {}
+        self.Motor6Ds = {}
         self.MoveDirection = Vector3.new()
         self.LookDirection = Vector3.new()
         self.LastState = CharacterState.Idling
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
 
-        self.WalkToFinished = Event()
+        self.MoveToFinished = Event()
         self.StateChanged = Event()
         self.AccessoryEquipped = Event()
         self.AccessoryUnequipping = Event()
@@ -103,16 +104,6 @@ local Luanoid = Class() do
                 self.AutoRotate = true
             else
                 self.AutoRotate = luanoidParams.AutoRotate
-            end
-            if luanoidParams.CanJump == nil then
-                self.CanJump = true
-            else
-                self.CanJump = luanoidParams.CanJump
-            end
-            if luanoidParams.CanClimb == nil then
-                self.CanClimb = true
-            else
-                self.CanClimb = luanoidParams.CanClimb
             end
         else
             self.Health = 100
@@ -135,15 +126,6 @@ local Luanoid = Class() do
 
         self.Character.AncestryChanged:Connect(function()
             if self.Character:IsDescendantOf(game.Workspace) then
-                if RunService:IsServer() and not self.RootPart:IsGrounded() then
-                    --[[
-                        Not sure why waiting fixes automatic NetworkOwnership
-                        not properly being disabled but it just works.
-                    ]]
-                    RunService.Heartbeat:Wait()
-                    self.RootPart:SetNetworkOwner(nil)
-                end
-
                 if self:GetNetworkOwner() == localNetworkOwner then
                     self:ResumeSimulation()
                 end
@@ -182,19 +164,43 @@ local Luanoid = Class() do
         local humanoidRootPart = self.RootPart
         local rigParts = self.RigParts
 
-        for _,v in pairs(rig:GetDescendants()) do
+        for _,v in ipairs(rig:GetDescendants()) do
             if v.Parent.Name == "HumanoidRootPart" then
                 v.Parent = humanoidRootPart
             end
             if v:IsA("Motor6D") then
+                table.insert(self.Motor6Ds, v)
+
                 if v.Part0.Name == "HumanoidRootPart" then
                     v.Part0 = humanoidRootPart
                 end
                 if v.Part1.Name == "HumanoidRootPart" then
                     v.Part1 = humanoidRootPart
                 end
+
+                if not v:FindFirstChild("RagdollBallSocket") then
+                    local attachment0 = v.Part0:FindFirstChild(v.Name.. "RigAttachment")
+                    local attachment1 = v.Part1:FindFirstChild(v.Name.. "RigAttachment")
+
+                    if attachment0 and attachment1 then
+                        local ballSocket = Instance.new("BallSocketConstraint")
+                        ballSocket.Name = "RagdollBallSocket"
+                        ballSocket.Enabled = false
+                        ballSocket.Attachment0 = attachment0
+                        ballSocket.Attachment1 = attachment1
+                        ballSocket.MaxFrictionTorque = 10
+                        ballSocket.Parent = v
+
+                        local noCollider = Instance.new("NoCollisionConstraint")
+                        noCollider.Name = "RagdollNoCollider"
+                        noCollider.Part0 = v.Part0
+                        noCollider.Part1 = v.Part1
+                        noCollider.Parent = v
+                    end
+                end
             elseif v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 table.insert(rigParts, v)
+                v.CanCollide = false
                 v.Parent = character
             end
         end
@@ -205,7 +211,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:RemoveRig()
-        for _,limb in pairs(self.RigParts) do
+        for _,limb in ipairs(self.RigParts) do
             limb:Destroy()
         end
         return self
@@ -237,7 +243,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:StopAnimations(...)
-        for _,animationTrack in pairs(self.Animator:GetPlayingAnimationTracks()) do
+        for _,animationTrack in ipairs(self.Animator:GetPlayingAnimationTracks()) do
             animationTrack:Stop(...)
         end
         return self
@@ -259,23 +265,40 @@ local Luanoid = Class() do
     end
 
     function Luanoid:Jump()
-        if self.CanJump then
-            self._jumpInput = true
+        self._jumpInput = true
+        return self
+    end
+
+    function Luanoid:Ragdoll(enable)
+        if not enable or (enable and self.State ~= CharacterState.Ragdoll) then
+            for _,motor6d in ipairs(self.Motor6Ds) do
+                local ragdollBallSocket = motor6d:FindFirstChild("RagdollBallSocket")
+                if ragdollBallSocket then
+                    ragdollBallSocket.Enabled = enable
+                    motor6d.Enabled = not enable
+                end
+            end
+            for _,part in ipairs(self.RigParts) do
+                part.CanCollide = enable
+            end
         end
+
+        if enable then
+            self:ChangeState(CharacterState.Ragdoll)
+        end
+    end
+
+    function Luanoid:MoveTo(target, timeout)
+        self._moveToTarget = target
+        self._moveToTimeout = timeout or 8
+        self._moveToTickStart = tick()
         return self
     end
 
-    function Luanoid:WalkTo(target, timeout)
-        self._walkToTarget = target
-        self._walkToTimeout = timeout or 8
-        self._walkToTickStart = tick()
-        return self
-    end
-
-    function Luanoid:CancelWalkTo()
-        self._walkToTarget = nil
-        self._walkToTimeout = 8
-        self._walkToTickStart = 0
+    function Luanoid:CancelMoveTo()
+        self._moveToTarget = nil
+        self._moveToTimeout = 8
+        self._moveToTickStart = 0
         return self
     end
 
@@ -296,6 +319,7 @@ local Luanoid = Class() do
             local attachment1 = self.Character:FindFirstChild(attachment0.Name, true)
             base = attachment1.Parent
 
+            primaryPart.CanCollide = false
             primaryPart.CFrame = attachment1.WorldCFrame * attachment0.CFrame:Inverse()
         else
             -- Accessory is a BasePart or Model
@@ -323,6 +347,7 @@ local Luanoid = Class() do
             accessory:PivotTo(pivot)
         end
         local weldConstraint = Instance.new("WeldConstraint")
+        weldConstraint.Name = "AccessoryWeldConstraint"
         weldConstraint.Part0 = primaryPart
         weldConstraint.Part1 = base
         weldConstraint.Parent = primaryPart
@@ -350,13 +375,26 @@ local Luanoid = Class() do
     end
 
     function Luanoid:RemoveAccessories()
-        for _,accessory in pairs(self:GetAccessories()) do
+        for _,accessory in ipairs(self:GetAccessories()) do
             self:RemoveAccessory(accessory)
         end
     end
 
-    function Luanoid:GetAccessories()
-        return self.Character.Accessories:GetChildren()
+    function Luanoid:GetAccessories(attachment)
+        if attachment then
+            local accessories = {}
+
+            for _,accessory in ipairs(self.Character.Accessories:GetChildren()) do
+                local weldConstraint = accessory:FindFirstChild("AccessoryWeldConstraint")
+                if weldConstraint.Part0 == attachment.Parent or weldConstraint.Part1 == attachment.Parent then
+                    table.insert(accessories, accessory)
+                end
+            end
+
+            return accessories
+        else
+            return self.Character.Accessories:GetChildren()
+        end
     end
 
     function Luanoid:GetNetworkOwner()
@@ -392,6 +430,10 @@ local Luanoid = Class() do
             self.LastState = curState
             self.State = newState
             self.StateChanged:Fire(self.State, self.LastState)
+
+            if curState == CharacterState.Ragdoll then
+                self:Ragdoll(false)
+            end
         end
     end
 
@@ -407,7 +449,17 @@ local Luanoid = Class() do
         if not connection or (connection and not connection.Connected) then
             -- TODO: Switch this to PreSimulation once enabled
             self._preSimConnection = RunService.Heartbeat:Connect(function(dt)
-                if not self.Character.HumanoidRootPart:IsGrounded() then
+                if not self.RootPart:IsGrounded() then
+                    local correctNetworkOwner = self:GetNetworkOwner()
+                    if RunService:IsServer() and correctNetworkOwner ~= self.RootPart:GetNetworkOwner() then
+                        --[[
+                            Roblox has automatically assigned a NetworkOwner
+                            when it shouldn't have. This can cause Luanoids'
+                            physics to become highly unstable.
+                        ]]
+                        self.RootPart:SetNetworkOwner(correctNetworkOwner)
+                    end
+
                     self.StateController:step(dt)
                 end
             end)

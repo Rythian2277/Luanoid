@@ -20,6 +20,10 @@
 
         "LuanoidResources": {
           "$path": "Resources"
+        },
+
+        "LuanoidService": {
+          "$path": "src/LuanoidService"
         }
       }
     }

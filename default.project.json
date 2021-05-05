@@ -1,7 +1,7 @@
 {
   "name": "Luanoid",
   "tree": {
-    "$path": "src",
+    "$path": "src/Luanoid",
 
     "Class": {
       "$path": "Opensource-Modules/src/Classes/Class.lua"
