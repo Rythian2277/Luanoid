@@ -51,7 +51,7 @@ Proper documentation page will be setup later.
   - `boolean`CanClimb
 - Methods
   - Destroy()
-  - SetRig(`Rig`rig)
+  - SetRig(`Model`rig)
   - RemoveRig()
   - LoadAnimation(`Animation`animation, `string?`animationName)
   - PlayAnimation(`string`animationName)
@@ -83,13 +83,6 @@ All StateControllers require a `step()` method to be defined.
 
 - Methods
   - step(`number`dt)
-
-### Rig
-
-- Properties
-  - Parts `Model`
-- Methods
-  - BuildRigFromAttachments(`Model`rig)
 
 ### CharacterState
 

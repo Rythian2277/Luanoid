@@ -172,11 +172,7 @@ local Luanoid = Class() do
         self:PauseSimulation()
     end
 
-    function Luanoid:SetRig()
-        
-    end
-
-    function Luanoid:BuildRigFromAttachments(rig)
+    function Luanoid:SetRig(rig)
         assert(typeof(rig) == "Instance" and rig:IsA("Model"), "Expected Model as Argument #1")
         assert(rig:FindFirstChild("HumanoidRootPart"), "Expected rig to have a HumanoidRootPart")
 
@@ -186,8 +182,10 @@ local Luanoid = Class() do
         local humanoidRootPart = self.RootPart
         local rigParts = self.RigParts
 
-        --[[
         for _,v in pairs(rig:GetDescendants()) do
+            if v.Parent.Name == "HumanoidRootPart" then
+                v.Parent = humanoidRootPart
+            end
             if v:IsA("Motor6D") then
                 if v.Part0.Name == "HumanoidRootPart" then
                     v.Part0 = humanoidRootPart
@@ -197,16 +195,11 @@ local Luanoid = Class() do
                 end
             elseif v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 table.insert(rigParts, v)
-                v.Anchored = false
-                v.Massless = true
                 v.Parent = character
             end
         end
-
         humanoidRootPart.Size = rig.HumanoidRootPart.Size
-
         rig:Destroy()
-        ]]
 
         return self
     end

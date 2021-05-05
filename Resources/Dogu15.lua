@@ -29,13 +29,19 @@ end
 return function(cf)
     local luanoid = require(game:GetService("ReplicatedStorage").Luanoid)()
 
-    luanoid:MountRig(DOGU15_RIG:Clone())
+    luanoid:SetRig(DOGU15_RIG:Clone())
 
     luanoid.RootPart.CFrame = cf or CFrame.new(0, 10, 0)
     luanoid.Character.Parent = workspace
 
     for animationName, animation in pairs(ANIMATIONS) do
         luanoid:LoadAnimation(animation, animationName)
+    end
+
+    for _,part in ipairs(luanoid.Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = false
+        end
     end
 
     return luanoid
