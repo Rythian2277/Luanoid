@@ -23,32 +23,32 @@ Proper documentation page will be setup later.
 ### Luanoid
 
 - Properties
-  - _mover `VectorForce`
-  - _aligner `AlignOrientation`
-  - _preSimConnection `RBXScriptConnection`
-  - _walkToTickStart `number`
-  - _walkToTarget `Vector3`|`BasePart`
-  - _walkToTimeout `number`
-  - _jumpInput `boolean`
-  - Character `Model`
-  - Animator `Animator`
-  - RootPart `Part`
-  - Floor `Part`
-  - RigParts `list`
-  - MoveDirection `Vector3`
-  - LookDirection `Vector3`
-  - LastState `Enum`
-  - State `Enum`
-  - AnimationTracks `list`
-  - Health `number`
-  - MaxHealth `number`
-  - WalkSpeed `number`
-  - JumpPower `number`
-  - HipHeight `number`
-  - StateController `StateController`
-  - AutoRotate `boolean`
-  - CanJump `boolean`
-  - CanClimb `boolean`
+  - `VectorForce`_mover: Levitates the Luanoid
+  - `AlignOrientation`_aligner: Keeps the Luanoid upright
+  - `RBXScriptConnection`_preSimConnection
+  - `number`_walkToTickStart: Time `WalkTo()` was called
+  - `Vector3`|`BasePart`_walkToTarget: WalkTo goal
+  - `number`_walkToTimeout: Max time spent walking to target
+  - `boolean`_jumpInput
+  - `Model`Character
+  - `Animator`Animator
+  - `Part`RootPart: HumanoidRootPart
+  - `BasePart`Floor: Instance the Luanoid is standing on
+  - `List`RigParts
+  - `Vector3`MoveDirection: Direction to walk towards
+  - `Vector3`LookDirection: Direction to look towards
+  - `Enum`LastState: Previous `CharacterState`
+  - `Enum`State: Current `CharacterState`
+  - `Dictionary`AnimationTracks
+  - `number`Health
+  - `number`MaxHealth
+  - `number`WalkSpeed
+  - `number`JumpPower
+  - `number`HipHeight
+  - `StateController`StateController
+  - `boolean`AutoRotate: Look in the direction walking
+  - `boolean`CanJump
+  - `boolean`CanClimb
 - Methods
   - Destroy()
   - SetRig(`Rig`rig)
@@ -78,6 +78,8 @@ Proper documentation page will be setup later.
   - AccessoryUnequipping: `Instance`accessory
 
 ### StateController
+
+All StateControllers require a `step()` method to be defined.
 
 - Methods
   - step(`number`dt)
