@@ -29,7 +29,46 @@ local function getFace(faceId)
 end
 
 local function getLimbParts(limbId)
-    return InsertService:LoadAsset(limbId).R15Fixed:GetChildren()
+    local assetTypeId = MarketPlaceService:GetProductInfo(limbId).AssetTypeId
+
+    if assetTypeId == 17 then
+        local head = Instance.new("Part")
+        head.Name = "Head"
+        head.Size = Vector3.new(2, 1, 1)
+
+        local mesh = InsertService:LoadAsset(limbId).Mesh
+        mesh.Parent = head
+
+        local faceCenterAttachment = Instance.new("Attachment")
+        faceCenterAttachment.Name = "FaceCenterAttachment"
+        faceCenterAttachment.Position = mesh.FaceCenterAttachment.Value
+        faceCenterAttachment.Parent = head
+
+        local faceFrontAttachment = Instance.new("Attachment")
+        faceFrontAttachment.Name = "FaceFrontAttachment"
+        faceFrontAttachment.Position = mesh.FaceFrontAttachment.Value
+        faceFrontAttachment.Parent = head
+
+        local hairAttachment = Instance.new("Attachment")
+        hairAttachment.Name = "HairAttachment"
+        hairAttachment.Position = mesh.HairAttachment.Value
+        hairAttachment.Parent = head
+
+        local hatAttachment = Instance.new("Attachment")
+        hatAttachment.Name = "HatAttachment"
+        hatAttachment.Position = mesh.HatAttachment.Value
+        hatAttachment.Parent = head
+
+        local neckRigAttachment = Instance.new("Attachment")
+        neckRigAttachment.Name = "NeckRigAttachment"
+        neckRigAttachment.Position = mesh.NeckRigAttachment.Value
+        neckRigAttachment.Parent = head
+
+        mesh:ClearAllChildren()
+        return {head}
+    else
+        return InsertService:LoadAsset(limbId).R15Fixed:GetChildren()
+    end
 end
 
 local function applyAnimation(luanoid, animationId, animationName)
@@ -39,6 +78,7 @@ end
 local function applyLimb(character, limbId)
     for _,part in pairs(getLimbParts(limbId)) do
         part.Material = Enum.Material.SmoothPlastic
+        part.CanCollide = false
         part.Parent = character
     end
 end
