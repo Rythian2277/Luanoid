@@ -11,34 +11,19 @@
 ]]
 
 local ANIMATIONS = {
-    Climbing = {
-        "http://www.roblox.com/asset/?id=507765644",
-    },
-    Falling = {
-        "http://www.roblox.com/asset/?id=507767968",
-    },
-    Idling = {
-        "http://www.roblox.com/asset/?id=507766388",
-        "http://www.roblox.com/asset/?id=507766666",
-    },
-    Jumping = {
-        "http://www.roblox.com/asset/?id=507765000",
-    },
-    Swimming = {
-        "http://www.roblox.com/asset/?id=913384386",
-    },
-    Walking = {
-        "http://www.roblox.com/asset/?id=913402848",
-    },
+    Climbing = "http://www.roblox.com/asset/?id=507765644",
+    Falling = "http://www.roblox.com/asset/?id=507767968",
+    Idling = "http://www.roblox.com/asset/?id=507766388", -- Looking around: 507766666
+    Jumping = "http://www.roblox.com/asset/?id=507765000",
+    Swimming = "http://www.roblox.com/asset/?id=913384386",
+    Walking = "http://www.roblox.com/asset/?id=913402848",
 }
 local DOGU15_RIG = game:GetService("InsertService"):LoadAsset(6324529033).R15Rig
 
-for _,variants in pairs(ANIMATIONS) do
-    for i, assetId in ipairs(variants) do
-        local animation = Instance.new("Animation")
-        animation.AnimationId = assetId
-        variants[i] = animation
-    end
+for animationName, assetId in pairs(ANIMATIONS) do
+    local animation = Instance.new("Animation")
+    animation.AnimationId = assetId
+    ANIMATIONS[animationName] = animation
 end
 
 return function(cf)
@@ -49,10 +34,8 @@ return function(cf)
     luanoid.RootPart.CFrame = cf or CFrame.new(0, 10, 0)
     luanoid.Character.Parent = workspace
 
-    for animationName, variants in pairs(ANIMATIONS) do
-        for _,animation in ipairs(variants) do
-            luanoid:LoadAnimation(animation, animationName)
-        end
+    for animationName, animation in pairs(ANIMATIONS) do
+        luanoid:LoadAnimation(animation, animationName)
     end
 
     return luanoid

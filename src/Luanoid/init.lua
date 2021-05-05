@@ -85,7 +85,6 @@ local Luanoid = Class() do
         self.LastState = CharacterState.Idling
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
-        self.PlayingAnimations = {}
 
         self.MoveToFinished = Event()
         self.StateChanged = Event()
@@ -218,34 +217,44 @@ local Luanoid = Class() do
 
         name = name or animation.Name
         local animationTrack = self.Animator:LoadAnimation(animation)
-        self.AnimationTracks[name] = self.AnimationTracks[name] or {}
-        table.insert(self.AnimationTracks[name], animationTrack)
+        self.AnimationTracks[name] = animationTrack
         return animationTrack
     end
 
     function Luanoid:PlayAnimation(name, ...)
-        local animationTracks = self.AnimationTracks[name]
-        if animationTracks then
-            local numAnimationTracks = #animationTracks
-            local animationTrack = animationTracks[math.random(1, numAnimationTracks)]
+        local animationTrack = self.AnimationTracks[name]
+        if animationTrack then
             animationTrack:Play(...)
-            self.PlayingAnimations[name] = animationTrack
         end
         return self
     end
 
     function Luanoid:StopAnimation(name, ...)
-        local animationTrack = self.PlayingAnimations[name]
+        local animationTrack = self.AnimationTracks[name]
         if animationTrack then
             animationTrack:Stop(...)
-            self.PlayingAnimations[name] = nil
         end
         return self
     end
 
-    function Luanoid:StopAllAnimations(...)
+    function Luanoid:StopAnimations(...)
         for _,animationTrack in pairs(self.Animator:GetPlayingAnimationTracks()) do
             animationTrack:Stop(...)
+        end
+        return self
+    end
+
+    function Luanoid:UnloadAnimation(name)
+        local animationTrack = self.AnimationTracks[name]
+        if animationTrack then
+            animationTrack:Destroy()
+        end
+        return self
+    end
+
+    function Luanoid:UnloadAnimations()
+        for _,animation in pairs(self.AnimationTracks) do
+            animation:Destroy()
         end
         return self
     end
