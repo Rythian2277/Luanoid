@@ -10,6 +10,10 @@ local CharacterState = require(script.CharacterState)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
+local function getCurrentTransform(motor6d)
+    return (motor6d.Part0.CFrame * motor6d.C0):ToObjectSpace(motor6d.Part1.CFrame * motor6d.C1)
+end
+
 local Luanoid = Class() do
     function Luanoid:init(luanoidParams)
         if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
@@ -177,27 +181,6 @@ local Luanoid = Class() do
                 if v.Part1.Name == "HumanoidRootPart" then
                     v.Part1 = humanoidRootPart
                 end
-
-                if not v:FindFirstChild("RagdollBallSocket") then
-                    local attachment0 = v.Part0:FindFirstChild(v.Name.. "RigAttachment")
-                    local attachment1 = v.Part1:FindFirstChild(v.Name.. "RigAttachment")
-
-                    if attachment0 and attachment1 then
-                        local ballSocket = Instance.new("BallSocketConstraint")
-                        ballSocket.Name = "RagdollBallSocket"
-                        ballSocket.Enabled = false
-                        ballSocket.Attachment0 = attachment0
-                        ballSocket.Attachment1 = attachment1
-                        ballSocket.MaxFrictionTorque = 10
-                        ballSocket.Parent = v
-
-                        local noCollider = Instance.new("NoCollisionConstraint")
-                        noCollider.Name = "RagdollNoCollider"
-                        noCollider.Part0 = v.Part0
-                        noCollider.Part1 = v.Part1
-                        noCollider.Parent = v
-                    end
-                end
             elseif v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
                 table.insert(rigParts, v)
                 v.CanCollide = false
@@ -267,25 +250,6 @@ local Luanoid = Class() do
     function Luanoid:Jump()
         self._jumpInput = true
         return self
-    end
-
-    function Luanoid:Ragdoll(enable)
-        if not enable or (enable and self.State ~= CharacterState.Ragdoll) then
-            for _,motor6d in ipairs(self.Motor6Ds) do
-                local ragdollBallSocket = motor6d:FindFirstChild("RagdollBallSocket")
-                if ragdollBallSocket then
-                    ragdollBallSocket.Enabled = enable
-                    motor6d.Enabled = not enable
-                end
-            end
-            for _,part in ipairs(self.RigParts) do
-                part.CanCollide = enable
-            end
-        end
-
-        if enable then
-            self:ChangeState(CharacterState.Ragdoll)
-        end
     end
 
     function Luanoid:MoveTo(target, timeout)
@@ -430,10 +394,6 @@ local Luanoid = Class() do
             self.LastState = curState
             self.State = newState
             self.StateChanged:Fire(self.State, self.LastState)
-
-            if curState == CharacterState.Ragdoll then
-                self:Ragdoll(false)
-            end
         end
     end
 

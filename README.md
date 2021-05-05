@@ -58,7 +58,6 @@ Proper documentation page will be setup later.
   - UnloadAnimation(`string`animationName)
   - UnloadAnimations()
   - Jump()
-  - Ragdoll()
   - MoveTo(`Vector3`|`BasePart`, `number?`)
   - CancelMoveTo()
   - AddAccessory(`BasePart`|`Model`|`Accessory`)
@@ -90,5 +89,4 @@ All StateControllers require a `step()` method to be defined.
 - Walking
 - Jumping
 - Falling
-- Ragdoll
 - Dead

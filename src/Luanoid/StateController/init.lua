@@ -93,18 +93,6 @@ local StateController = Class() do
         local mover = luanoid._mover
         local aligner = luanoid._aligner
 
-        --[[
-            Some states are unique and are never entered through this
-            StateController. These states get priority over the rest of the
-            state handling logic.
-        ]]
-        if curState == CharacterState.Ragdoll then
-            mover.Enabled = false
-            aligner.Enabled = false
-            luanoid:Ragdoll(true)
-            return curState
-        end
-
         if luanoid.Health <= 0 then
             newState = CharacterState.Dead
         else
@@ -225,11 +213,9 @@ local StateController = Class() do
 
         elseif newState == CharacterState.Dead then
 
-            -- Stop the simulation and begin ragdolling the Luanoid
+            -- Stop the simulation
             mover.Enabled = false
             luanoid:PauseSimulation()
-            luanoid:Ragdoll(true)
-
         end
 
         luanoid:ChangeState(newState)

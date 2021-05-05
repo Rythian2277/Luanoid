@@ -8,6 +8,5 @@ return {
     -- Swimming = {Name = "Swimming"},
     -- SwimIdling = {Name = "SwimIdling"},
     -- Climbing = {Name = "Climbing"},
-    Ragdoll = {Name = "Ragdoll"},
     Dead = {Name = "Dead"},
 }
