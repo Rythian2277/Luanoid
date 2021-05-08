@@ -1,21 +1,14 @@
 local Class = require(script.Parent.Class)
 local CharacterState = require(script.Parent.CharacterState)
 
-local function StepSpring(framerate, position, velocity, destination, stiffness, damping, precision)
-	local displacement = position - destination
-	local springForce = -stiffness * displacement
-	local dampForce = -damping * velocity
-
-	local acceleration = springForce + dampForce
-	local newVelocity = velocity + acceleration * framerate
-	local newPosition = position + velocity * framerate
-
-	if math.abs(newVelocity) < precision and math.abs(destination - newPosition) < precision then
-		return destination, 0
-	end
-
-	return newPosition, newVelocity
-end
+local DEFAULT_LOGIC_HANDLER = require(script.logic)
+local DEFAULT_STATE_HANDLERS = {}
+DEFAULT_STATE_HANDLERS[CharacterState.Physics] = require(script.fallingAndPhysics)
+DEFAULT_STATE_HANDLERS[CharacterState.Idling] = require(script.idlingAndWalking)
+DEFAULT_STATE_HANDLERS[CharacterState.Walking] = DEFAULT_STATE_HANDLERS[CharacterState.Idling]
+DEFAULT_STATE_HANDLERS[CharacterState.Jumping] = require(script.jumping)
+DEFAULT_STATE_HANDLERS[CharacterState.Falling] = DEFAULT_STATE_HANDLERS[CharacterState.Physics]
+DEFAULT_STATE_HANDLERS[CharacterState.Dead] = require(script.dead)
 
 local StateController = Class() do
     function StateController:init(luanoid)
@@ -23,6 +16,14 @@ local StateController = Class() do
         self._accumulatedTime = 0
         self._currentAccelerationX = 0
         self._currentAccelerationZ = 0
+
+        self.Logic = DEFAULT_LOGIC_HANDLER
+        self.StateHandlers = {}
+
+        for i,v in pairs(DEFAULT_STATE_HANDLERS) do
+            self.StateHandlers[i] = v
+        end
+
         local raycastParams = RaycastParams.new()
         raycastParams.FilterDescendantsInstances = {luanoid.Character}
         raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
@@ -78,145 +79,12 @@ local StateController = Class() do
         end
 
         -- Calculating state logic
-        local hipHeight = luanoid.HipHeight
-        local groundDistanceGoal = hipHeight + luanoid.Character.HumanoidRootPart.Size.Y / 2
-        local raycastResult = castCollideOnly(luanoid.Character.HumanoidRootPart.Position, Vector3.new(0, -groundDistanceGoal, 0))
-        local velocity = luanoid.Character.HumanoidRootPart.AssemblyLinearVelocity
-
-        local currentVelocityX = velocity.X
-        local currentVelocityY = velocity.Y
-        local currentVelocityZ = velocity.Z
-
+        self.RaycastResult = castCollideOnly(luanoid.Character.HumanoidRootPart.Position, Vector3.new(0, -(luanoid.HipHeight + luanoid.Character.HumanoidRootPart.Size.Y / 2), 0))
         local curState = luanoid.State
-        local newState = curState
-
-        local mover = luanoid._mover
-        local aligner = luanoid._aligner
-
-        if luanoid.Health <= 0 then
-            newState = CharacterState.Dead
-        else
-            if luanoid.Character.HumanoidRootPart:GetRootPart() == luanoid.Character.HumanoidRootPart then
-                if curState == CharacterState.Jumping then
-                    if currentVelocityY < 0 then
-                        -- We passed the peak of the jump and are now falling downward
-                        newState = CharacterState.Falling
-
-                        luanoid.Floor = nil
-                    end
-                elseif curState ~= CharacterState.Climbing then
-                    if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
-                        -- We are grounded
-                        if luanoid._jumpInput then
-                            luanoid._jumpInput = false
-                            newState = CharacterState.Jumping
-                        else
-                            if luanoid.MoveDirection.Magnitude > 0 then
-                                newState = CharacterState.Walking
-                            else
-                                newState = CharacterState.Idling
-                            end
-                        end
-
-                        luanoid.Floor = raycastResult.Instance
-                    else
-                        newState = CharacterState.Falling
-
-                        luanoid.Floor = nil
-                    end
-                end
-            else
-                -- HRP isn't RootPart so Character is likely welded to something
-                newState = CharacterState.Physics
-
-                luanoid.Floor = nil
-            end
-        end
+        local newState = self:Logic(dt)
 
         -- State handling logic
-        mover.Enabled = true
-        aligner.Enabled = true
-        if newState == CharacterState.Idling or newState == CharacterState.Walking then
-
-            -- Luanoid calculations used for idle/walking state
-            local groundPos = raycastResult.Position
-            local targetVelocity = Vector3.new()
-
-            luanoid.MoveDirection = Vector3.new(luanoid.MoveDirection.X, 0, luanoid.MoveDirection.Z)
-            if luanoid.MoveDirection.Magnitude > 0 then
-                targetVelocity = Vector3.new(luanoid.MoveDirection.X, 0, luanoid.MoveDirection.Z).Unit * luanoid.WalkSpeed
-            end
-
-            self._accumulatedTime = (self._accumulatedTime or 0) + dt
-
-            while self._accumulatedTime >= 1 / 240 do
-                self._accumulatedTime = self._accumulatedTime - 1 / 240
-                currentVelocityX, self._currentAccelerationX = StepSpring(
-                    1 / 240,
-                    currentVelocityX,
-                    self._currentAccelerationX or 0,
-                    targetVelocity.X,
-                    170,
-                    26,
-                    0.001
-                )
-                currentVelocityZ, self._currentAccelerationZ = StepSpring(
-                    1 / 240,
-                    currentVelocityZ,
-                    self._currentAccelerationZ or 0,
-                    targetVelocity.Z,
-                    170,
-                    26,
-                    0.001
-                )
-            end
-            local targetHeight = groundPos.Y + hipHeight + luanoid.Character.HumanoidRootPart.Size.Y / 2
-            local currentHeight = luanoid.Character.HumanoidRootPart.Position.Y
-            local aUp
-            local t = 0.05
-            aUp = workspace.Gravity + 2*((targetHeight - currentHeight) - currentVelocityY*t)/(t*t)
-            local deltaHeight = math.max((targetHeight - currentHeight)*1.01, 0)
-            deltaHeight = math.min(deltaHeight, hipHeight)
-            local maxUpVelocity = math.sqrt(2.0*workspace.Gravity*deltaHeight)
-            local maxUpImpulse = math.max((maxUpVelocity - currentVelocityY)*60, 0)
-            aUp = math.min(aUp, maxUpImpulse)
-            aUp = math.max(-1, aUp)
-
-            local aX = self._currentAccelerationX
-            local aZ = self._currentAccelerationZ
-
-            mover.Force = Vector3.new(aX, aUp, aZ) * luanoid.Character.HumanoidRootPart.AssemblyMass
-
-            -- Look direction stuff
-            if luanoid.MoveDirection.Magnitude > 0 and luanoid.AutoRotate then
-                luanoid.LookDirection = luanoid.MoveDirection
-            end
-
-            if luanoid.LookDirection.Magnitude > 0 then
-                aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
-            end
-
-        elseif newState == CharacterState.Jumping then
-
-            mover.Enabled = false
-            if curState ~= CharacterState.Jumping then
-                luanoid.Character.HumanoidRootPart:ApplyImpulse(Vector3.new(0, luanoid.JumpPower * luanoid.Character.HumanoidRootPart.AssemblyMass, 0))
-            end
-
-            if luanoid.LookDirection.Magnitude > 0 then
-                aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
-            end
-
-        elseif newState == CharacterState.Falling or newState == CharacterState.Physics then
-
-            mover.Enabled = false
-
-        elseif newState == CharacterState.Dead then
-
-            -- Stop the simulation
-            mover.Enabled = false
-            luanoid:PauseSimulation()
-        end
+        self.StateHandlers[newState](self, dt)
 
         luanoid:ChangeState(newState)
         if newState ~= curState then

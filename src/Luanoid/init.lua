@@ -10,10 +10,6 @@ local CharacterState = require(script.CharacterState)
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-local function getCurrentTransform(motor6d)
-    return (motor6d.Part0.CFrame * motor6d.C0):ToObjectSpace(motor6d.Part1.CFrame * motor6d.C1)
-end
-
 local Luanoid = Class() do
     function Luanoid:init(luanoidParams)
         if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
@@ -200,26 +196,31 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:LoadAnimation(animation, name)
+	function Luanoid:LoadAnimation(animation, animationName, properties)
         assert(typeof(animation) == "Instance" and animation:IsA("Animation"), "Expected Animation as Argument #1")
 
-        name = name or animation.Name
+		animationName = animationName or animation.Name
         local animationTrack = self.Animator:LoadAnimation(animation)
-        self.AnimationTracks[name] = animationTrack
+		self.AnimationTracks[animationName] = animationTrack
+
+        for i,v in pairs(properties) do
+            animationTrack[i] = v
+        end
+
         return animationTrack
     end
 
-    function Luanoid:PlayAnimation(name, ...)
-        local animationTrack = self.AnimationTracks[name]
-        if animationTrack then
+	function Luanoid:PlayAnimation(animationName, ...)
+		local animationTrack = self.AnimationTracks[animationName]
+		if animationTrack then
             animationTrack:Play(...)
         end
         return self
     end
 
-    function Luanoid:StopAnimation(name, ...)
-        local animationTrack = self.AnimationTracks[name]
-        if animationTrack then
+	function Luanoid:StopAnimation(animationName, ...)
+		local animationTrack = self.AnimationTracks[animationName]
+		if animationTrack then
             animationTrack:Stop(...)
         end
         return self
@@ -232,17 +233,19 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:UnloadAnimation(name)
-        local animationTrack = self.AnimationTracks[name]
-        if animationTrack then
-            animationTrack:Destroy()
+    function Luanoid:UnloadAnimation(animationName)
+		local animationTrack = self.AnimationTracks[animationName]
+		if animationTrack then
+			animationTrack:Destroy()
+			self.AnimationTracks[animationName] = nil
         end
         return self
     end
 
     function Luanoid:UnloadAnimations()
-        for _,animation in pairs(self.AnimationTracks) do
-            animation:Destroy()
+		for animationName, animation in pairs(self.AnimationTracks) do
+			animation:Destroy()
+			self.AnimationTracks[animationName] = nil
         end
         return self
     end

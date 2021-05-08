@@ -10,20 +10,39 @@
     https://www.roblox.com/library/6324529033/R15Rig
 ]]
 
+local PRIORITY = Enum.AnimationPriority
 local ANIMATIONS = {
-    Climbing = "http://www.roblox.com/asset/?id=507765644",
-    Falling = "http://www.roblox.com/asset/?id=507767968",
-    Idling = "http://www.roblox.com/asset/?id=507766388", -- Looking around: 507766666
-    Jumping = "http://www.roblox.com/asset/?id=507765000",
-    Swimming = "http://www.roblox.com/asset/?id=913384386",
-    Walking = "http://www.roblox.com/asset/?id=913402848",
+    Climbing = {
+        AnimationId = "http://www.roblox.com/asset/?id=507765644",
+        Priority = PRIORITY.Movement
+    },
+    Falling = {
+        AnimationId = "http://www.roblox.com/asset/?id=507767968",
+        Priority = PRIORITY.Movement
+    },
+    Idling = {
+        AnimationId = "http://www.roblox.com/asset/?id=507766388", -- Looking around: 507766666
+        Priority = PRIORITY.Idle
+    },
+    Jumping = {
+        AnimationId = "http://www.roblox.com/asset/?id=507765000",
+        Priority = PRIORITY.Movement
+    },
+    Swimming = {
+        AnimationId = "http://www.roblox.com/asset/?id=913384386",
+        Priority = PRIORITY.Movement
+    },
+    Walking = {
+        AnimationId = "http://www.roblox.com/asset/?id=913402848",
+        Priority = PRIORITY.Movement
+    },
 }
 local DOGU15_RIG = game:GetService("InsertService"):LoadAsset(6324529033).R15Rig
 
-for animationName, assetId in pairs(ANIMATIONS) do
+for _,animationData in pairs(ANIMATIONS) do
     local animation = Instance.new("Animation")
-    animation.AnimationId = assetId
-    ANIMATIONS[animationName] = animation
+    animation.AnimationId = animationData.AnimationId
+    animationData.Animation = animation
 end
 
 return function(cf)
@@ -34,8 +53,14 @@ return function(cf)
     luanoid.RootPart.CFrame = cf or CFrame.new(0, 10, 0)
     luanoid.Character.Parent = workspace
 
-    for animationName, animation in pairs(ANIMATIONS) do
-        luanoid:LoadAnimation(animation, animationName)
+    for animationName, animationData in pairs(ANIMATIONS) do
+        luanoid:LoadAnimation(
+            animationData.Animation,
+            animationName,
+            {
+                Priority = animationData[2],
+            }
+        )
     end
 
     for _,part in ipairs(luanoid.Character:GetDescendants()) do
