@@ -3,12 +3,12 @@ local CharacterState = require(script.Parent.CharacterState)
 
 local DEFAULT_LOGIC_HANDLER = require(script.logic)
 local DEFAULT_STATE_HANDLERS = {}
-DEFAULT_STATE_HANDLERS[CharacterState.Physics] = require(script.fallingAndPhysics)
-DEFAULT_STATE_HANDLERS[CharacterState.Idling] = require(script.idlingAndWalking)
+DEFAULT_STATE_HANDLERS[CharacterState.Physics] = require(script.FallingAndPhysics)
+DEFAULT_STATE_HANDLERS[CharacterState.Idling] = require(script.IdlingAndWalking)
 DEFAULT_STATE_HANDLERS[CharacterState.Walking] = DEFAULT_STATE_HANDLERS[CharacterState.Idling]
-DEFAULT_STATE_HANDLERS[CharacterState.Jumping] = require(script.jumping)
+DEFAULT_STATE_HANDLERS[CharacterState.Jumping] = require(script.Jumping)
 DEFAULT_STATE_HANDLERS[CharacterState.Falling] = DEFAULT_STATE_HANDLERS[CharacterState.Physics]
-DEFAULT_STATE_HANDLERS[CharacterState.Dead] = require(script.dead)
+DEFAULT_STATE_HANDLERS[CharacterState.Dead] = require(script.Dead)
 
 local StateController = Class() do
     function StateController:init(luanoid)
@@ -29,6 +29,23 @@ local StateController = Class() do
         raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
         raycastParams.IgnoreWater = false
         self.RaycastParams = raycastParams
+
+        luanoid.StateChanged:Connect(function(newState, oldState)
+            if self.StateHandlers[newState] then
+                local leaving = self.StateHandlers[newState].Leaving
+                if leaving then
+                    leaving(self)
+                end
+            end
+            if self.StateHandlers[newState] then
+                if newState ~= oldState then
+                    local entering = self.StateHandlers[newState].Entering
+                    if entering then
+                        entering(self)
+                    end
+                end
+            end
+        end)
     end
 
     function StateController:step(dt)
@@ -84,7 +101,9 @@ local StateController = Class() do
         local newState = self:Logic(dt)
 
         -- State handling logic
-        self.StateHandlers[newState](self, dt)
+        if self.StateHandlers[newState] then
+            self.StateHandlers[newState].step(self, dt)
+        end
 
         luanoid:ChangeState(newState)
         if newState ~= curState then

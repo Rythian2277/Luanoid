@@ -1,6 +1,8 @@
 local CharacterState = require(script.Parent.Parent.CharacterState)
 
-return function(self)
+local Jumping = {}
+
+function Jumping.step(self)
     local luanoid = self.Luanoid
 
     luanoid._mover.Enabled = false
@@ -14,3 +16,5 @@ return function(self)
         luanoid._aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
     end
 end
+
+return Jumping

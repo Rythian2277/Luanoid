@@ -14,7 +14,9 @@ local function StepSpring(framerate, position, velocity, destination, stiffness,
 	return newPosition, newVelocity
 end
 
-return function(self, dt)
+local IdlingAndWalking = {}
+
+function IdlingAndWalking.step(self, dt)
     local luanoid = self.Luanoid
     local hipHeight = luanoid.HipHeight
     local velocity = luanoid.Character.HumanoidRootPart.AssemblyLinearVelocity
@@ -81,4 +83,11 @@ return function(self, dt)
     if luanoid.LookDirection.Magnitude > 0 then
         aligner.Attachment1.CFrame = CFrame.lookAt(Vector3.new(), luanoid.LookDirection)
     end
+
+    local animationTrack = luanoid.AnimationTracks.Walking
+    if animationTrack then
+        animationTrack:AdjustSpeed(luanoid.WalkSpeed / 16)
+    end
 end
+
+return IdlingAndWalking
