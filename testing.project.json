@@ -16,14 +16,26 @@
           "Event": {
             "$path": "Opensource-Modules/src/Classes/Event.lua"
           }
-        },
+        }
+      },
 
-        "LuanoidResources": {
-          "$path": "Resources"
-        },
+      "ServerScriptService": {
+        "$className": "ServerScriptService",
 
-        "LuanoidService": {
-          "$path": "src/LuanoidService"
+        "LuanoidServer": {
+          "$path": "Demo/LuanoidServer"
+        }
+      },
+
+      "StarterPlayer": {
+        "$className": "StarterPlayer",
+
+        "StarterPlayerScripts": {
+          "$className": "StarterPlayerScripts",
+
+          "PlayerScriptsLoader": {
+            "$path": "Demo/PlayerScriptsLoader.client.lua"
+          }
         }
       }
     }

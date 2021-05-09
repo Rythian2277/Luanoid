@@ -1,0 +1,30 @@
+{
+    "name": "Luanoid Demo",
+    "tree": {
+        "$className": "DataModel",
+
+        "ServerScriptService": {
+            "$className": "ServerScriptService",
+
+            "LuanoidServer": {
+                "$path": "LuanoidServer.server.lua"
+            }
+        },
+
+        "StarterPlayer": {
+            "$className": "StarterPlayer",
+
+            "StarterPlayerScripts": {
+                "$className": "StarterPlayerScripts",
+
+                "LuanoidClient": {
+                    "$path": "LuanoidClient.client.lua"
+                },
+
+                "PlayerScriptsLoader": {
+                    "$path": "PlayerScriptsLoader.client.lua"
+                }
+            }
+        }
+    }
+}

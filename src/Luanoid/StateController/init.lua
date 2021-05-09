@@ -53,15 +53,16 @@ local StateController = Class() do
 
         if luanoid._moveToTarget then
             if tick() - luanoid._moveToTickStart < luanoid._moveToTimeout then
-                if typeof(luanoid._moveToTarget) == "Instance" then
-                    luanoid._moveToTarget = luanoid._moveToTarget.Position
+                local moveToTarget = luanoid._moveToTarget
+                if typeof(moveToTarget) == "Instance" then
+                    moveToTarget = moveToTarget.Position
                 end
 
-                if math.abs(luanoid._moveToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(luanoid._moveToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(luanoid._moveToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
+                if math.abs(moveToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(moveToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(moveToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
                     luanoid:CancelMoveTo()
                     luanoid.MoveToFinished:Fire(true)
                 else
-                    luanoid.MoveDirection = (luanoid._moveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
+                    luanoid.MoveDirection = (moveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
                 end
             else
                 luanoid:CancelMoveTo()

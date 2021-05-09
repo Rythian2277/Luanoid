@@ -43,7 +43,7 @@ function IdlingAndWalking.step(self, dt)
             self._currentAccelerationX or 0,
             targetVelocity.X,
             170,
-            26,
+            22,
             0.001
         )
         currentVelocityZ, self._currentAccelerationZ = StepSpring(
@@ -52,7 +52,7 @@ function IdlingAndWalking.step(self, dt)
             self._currentAccelerationZ or 0,
             targetVelocity.Z,
             170,
-            26,
+            22,
             0.001
         )
     end

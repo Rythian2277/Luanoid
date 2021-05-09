@@ -10,6 +10,10 @@
     https://www.roblox.com/library/6324529033/R15Rig
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local InsertService = game:GetService("InsertService")
+local RunService = game:GetService("RunService")
+
 local PRIORITY = Enum.AnimationPriority
 local ANIMATIONS = {
     Climbing = {
@@ -37,7 +41,14 @@ local ANIMATIONS = {
         Priority = PRIORITY.Movement
     },
 }
-local DOGU15_RIG = game:GetService("InsertService"):LoadAsset(6324529033).R15Rig
+local DOGU15_RIG
+
+if RunService:IsServer() then
+    DOGU15_RIG = InsertService:LoadAsset(6324529033).R15Rig
+    DOGU15_RIG.Parent = ReplicatedStorage
+else
+    DOGU15_RIG = ReplicatedStorage:WaitForChild("R15Rig")
+end
 
 for _,animationData in pairs(ANIMATIONS) do
     local animation = Instance.new("Animation")
@@ -46,7 +57,7 @@ for _,animationData in pairs(ANIMATIONS) do
 end
 
 return function(cf)
-    local luanoid = require(game:GetService("ReplicatedStorage").Luanoid)()
+    local luanoid = require(ReplicatedStorage.Luanoid)()
 
     luanoid:SetRig(DOGU15_RIG:Clone())
 

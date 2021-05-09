@@ -15,9 +15,9 @@ local Luanoid = Class() do
         if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
             local humanoidRootPart = luanoidParams:WaitForChild("HumanoidRootPart")
             self.Character = luanoidParams
-			self._mover = humanoidRootPart.Mover
-			self._aligner = humanoidRootPart.Aligner
-            self.Animator = self.Character.AnimationController.Animator
+			self._mover = humanoidRootPart:WaitForChild("Mover")
+			self._aligner = humanoidRootPart:WaitForChild("Aligner")
+            self.Animator = self.Character:WaitForChild("AnimationController").Animator
 			self.RootPart = humanoidRootPart
         else --// Needs to be created
             luanoidParams = luanoidParams or {}
@@ -112,6 +112,7 @@ local Luanoid = Class() do
             self.JumpPower = 50
             self.HipHeight = 2
             self.StateController = StateController(self)
+            self.AutoRotate = true
         end
 
         local localNetworkOwner
@@ -124,8 +125,9 @@ local Luanoid = Class() do
         ]]
         self:SetNetworkOwner(localNetworkOwner)
 
-        self.Character.AncestryChanged:Connect(function()
-            if self.Character:IsDescendantOf(game.Workspace) then
+        local character = self.Character
+        character.AncestryChanged:Connect(function()
+            if character:IsDescendantOf(game.Workspace) then
                 if self:GetNetworkOwner() == localNetworkOwner then
                     self:ResumeSimulation()
                 end
@@ -134,7 +136,7 @@ local Luanoid = Class() do
             end
         end)
 
-        self.Character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
+        character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
             if self:GetNetworkOwner() == localNetworkOwner then
                 self:ResumeSimulation()
             else
@@ -142,7 +144,7 @@ local Luanoid = Class() do
             end
         end)
 
-        if self:GetNetworkOwner() == localNetworkOwner and self.Character:IsDescendantOf(game.Workspace) then
+        if self:GetNetworkOwner() == localNetworkOwner and character:IsDescendantOf(game.Workspace) then
             self:ResumeSimulation()
         end
     end
@@ -203,7 +205,7 @@ local Luanoid = Class() do
         local animationTrack = self.Animator:LoadAnimation(animation)
 		self.AnimationTracks[animationName] = animationTrack
 
-        for i,v in pairs(properties) do
+        for i,v in pairs(properties or {}) do
             animationTrack[i] = v
         end
 
@@ -365,7 +367,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:GetNetworkOwner()
-        local networkOwner = self.RootPart:GetAttribute("NetworkOwner")
+        local networkOwner = self.Character:GetAttribute("NetworkOwner")
         if networkOwner then
             networkOwner = Players[networkOwner]
         end
