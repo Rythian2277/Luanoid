@@ -2,22 +2,25 @@
 --// Creator: Rythian Smythe / Rythian2277
 --// Date: April 18, 2021
 
+type Target = BasePart | Vector3
+type CustomAccessory = Accessory | Model | BasePart
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
 local Class = require(script.Class)
 local Event = require(script.Event)
 local StateController = require(script.StateController)
 local CharacterState = require(script.CharacterState)
 
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-
 local Luanoid = Class() do
-    function Luanoid:init(luanoidParams)
+    function Luanoid:init(luanoidParams): nil
         if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
             local humanoidRootPart = luanoidParams:WaitForChild("HumanoidRootPart")
             self.Character = luanoidParams
-			self._mover = humanoidRootPart:WaitForChild("Mover")
-			self._aligner = humanoidRootPart:WaitForChild("Aligner")
-            self.Animator = self.Character:WaitForChild("AnimationController").Animator
+			self._mover = humanoidRootPart.Mover
+			self._aligner = humanoidRootPart.Aligner
+            self.Animator = self.Character.AnimationController.Animator
 			self.RootPart = humanoidRootPart
         else --// Needs to be created
             luanoidParams = luanoidParams or {}
@@ -112,7 +115,6 @@ local Luanoid = Class() do
             self.JumpPower = 50
             self.HipHeight = 2
             self.StateController = StateController(self)
-            self.AutoRotate = true
         end
 
         local localNetworkOwner
@@ -121,13 +123,13 @@ local Luanoid = Class() do
         end
         --[[
             If we are on a Client the localNetworkOwner is the player while on
-            the server the localNetworkOwner is nil which reprents server.
+            the server the localNetworkOwner is nil which represents the
+            server.
         ]]
         self:SetNetworkOwner(localNetworkOwner)
 
-        local character = self.Character
-        character.AncestryChanged:Connect(function()
-            if character:IsDescendantOf(game.Workspace) then
+        self.Character.AncestryChanged:Connect(function()
+            if self.Character:IsDescendantOf(game.Workspace) then
                 if self:GetNetworkOwner() == localNetworkOwner then
                     self:ResumeSimulation()
                 end
@@ -136,7 +138,7 @@ local Luanoid = Class() do
             end
         end)
 
-        character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
+        self.Character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
             if self:GetNetworkOwner() == localNetworkOwner then
                 self:ResumeSimulation()
             else
@@ -144,19 +146,19 @@ local Luanoid = Class() do
             end
         end)
 
-        if self:GetNetworkOwner() == localNetworkOwner and character:IsDescendantOf(game.Workspace) then
+        if self:GetNetworkOwner() == localNetworkOwner and self.Character:IsDescendantOf(game.Workspace) then
             self:ResumeSimulation()
         end
     end
 
-    function Luanoid:Destroy()
+    function Luanoid:Destroy(): nil
         self._aligner.Attachment1:Destroy()
         self.Character:Destroy()
         self.StateController:Destroy()
         self:PauseSimulation()
     end
 
-    function Luanoid:SetRig(rig)
+    function Luanoid:SetRig(rig: Model): nil
         assert(typeof(rig) == "Instance" and rig:IsA("Model"), "Expected Model as Argument #1")
         assert(rig:FindFirstChild("HumanoidRootPart"), "Expected rig to have a HumanoidRootPart")
 
@@ -191,6 +193,15 @@ local Luanoid = Class() do
         return self
     end
 
+    function Luanoid:ToggleRigCollision(canCollide: boolean)
+        for _,part in ipairs(self.RigParts) do
+            if part:IsA("BasePart") then
+                part.CanCollide = canCollide
+            end
+        end
+        return self
+    end
+
     function Luanoid:RemoveRig()
         for _,limb in ipairs(self.RigParts) do
             limb:Destroy()
@@ -198,31 +209,26 @@ local Luanoid = Class() do
         return self
     end
 
-	function Luanoid:LoadAnimation(animation, animationName, properties)
+    function Luanoid:LoadAnimation(animation: Animation, name: string?): AnimationTrack
         assert(typeof(animation) == "Instance" and animation:IsA("Animation"), "Expected Animation as Argument #1")
 
-		animationName = animationName or animation.Name
+        name = name or animation.Name
         local animationTrack = self.Animator:LoadAnimation(animation)
-		self.AnimationTracks[animationName] = animationTrack
-
-        for i,v in pairs(properties or {}) do
-            animationTrack[i] = v
-        end
-
+        self.AnimationTracks[name] = animationTrack
         return animationTrack
     end
 
-	function Luanoid:PlayAnimation(animationName, ...)
-		local animationTrack = self.AnimationTracks[animationName]
-		if animationTrack then
+    function Luanoid:PlayAnimation(name: string, ...)
+        local animationTrack = self.AnimationTracks[name]
+        if animationTrack then
             animationTrack:Play(...)
         end
         return self
     end
 
-	function Luanoid:StopAnimation(animationName, ...)
-		local animationTrack = self.AnimationTracks[animationName]
-		if animationTrack then
+    function Luanoid:StopAnimation(name: string, ...)
+        local animationTrack = self.AnimationTracks[name]
+        if animationTrack then
             animationTrack:Stop(...)
         end
         return self
@@ -235,19 +241,17 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:UnloadAnimation(animationName)
-		local animationTrack = self.AnimationTracks[animationName]
-		if animationTrack then
-			animationTrack:Destroy()
-			self.AnimationTracks[animationName] = nil
+    function Luanoid:UnloadAnimation(name: string)
+        local animationTrack = self.AnimationTracks[name]
+        if animationTrack then
+            animationTrack:Destroy()
         end
         return self
     end
 
     function Luanoid:UnloadAnimations()
-		for animationName, animation in pairs(self.AnimationTracks) do
-			animation:Destroy()
-			self.AnimationTracks[animationName] = nil
+        for _,animation in pairs(self.AnimationTracks) do
+            animation:Destroy()
         end
         return self
     end
@@ -257,7 +261,7 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:MoveTo(target, timeout)
+    function Luanoid:MoveTo(target: Target, timeout: number?)
         self._moveToTarget = target
         self._moveToTimeout = timeout or 8
         self._moveToTickStart = tick()
@@ -271,7 +275,7 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:AddAccessory(accessory, base, pivot)
+    function Luanoid:AddAccessory(accessory: CustomAccessory, base: Attachment?, pivot: CFrame?)
         local character = self.Character
 
         assert(
@@ -327,7 +331,7 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:RemoveAccessory(accessory)
+    function Luanoid:RemoveAccessory(accessory: CustomAccessory)
         assert(
             typeof(accessory) == "Instance",
             "Expected Instance as Argument #1"
@@ -347,9 +351,10 @@ local Luanoid = Class() do
         for _,accessory in ipairs(self:GetAccessories()) do
             self:RemoveAccessory(accessory)
         end
+        return self
     end
 
-    function Luanoid:GetAccessories(attachment)
+    function Luanoid:GetAccessories(attachment: Attachment): {CustomAccessory}
         if attachment then
             local accessories = {}
 
@@ -366,15 +371,15 @@ local Luanoid = Class() do
         end
     end
 
-    function Luanoid:GetNetworkOwner()
-        local networkOwner = self.Character:GetAttribute("NetworkOwner")
+    function Luanoid:GetNetworkOwner(): Player?
+        local networkOwner = self.RootPart:GetAttribute("NetworkOwner")
         if networkOwner then
             networkOwner = Players[networkOwner]
         end
         return networkOwner
     end
 
-    function Luanoid:SetNetworkOwner(networkOwner)
+    function Luanoid:SetNetworkOwner(networkOwner: Player?)
         assert(
             networkOwner == nil
             or (typeof(networkOwner) == "Instance" and networkOwner:IsA("Player")),
@@ -407,12 +412,12 @@ local Luanoid = Class() do
         if connection then
             connection:Disconnect()
         end
+        return self
     end
 
     function Luanoid:ResumeSimulation()
         local connection = self._preSimConnection
         if not connection or (connection and not connection.Connected) then
-            -- TODO: Switch this to PreSimulation once enabled
             self._preSimConnection = RunService.Heartbeat:Connect(function(dt)
                 if not self.RootPart:IsGrounded() then
                     local correctNetworkOwner = self:GetNetworkOwner()
@@ -429,6 +434,7 @@ local Luanoid = Class() do
                 end
             end)
         end
+        return self
     end
 end
 
