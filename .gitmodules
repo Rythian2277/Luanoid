@@ -1,3 +1,6 @@
 [submodule "Opensource-Modules"]
 	path = Opensource-Modules
 	url = https://github.com/Rythian2277/Opensource-Modules
+[submodule "Enum"]
+	path = Enum
+	url = https://github.com/raphtalia/Enum

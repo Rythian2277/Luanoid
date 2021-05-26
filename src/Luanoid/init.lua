@@ -269,9 +269,13 @@ local Luanoid = Class() do
     end
 
     function Luanoid:CancelMoveTo()
-        self._moveToTarget = nil
-        self._moveToTimeout = 8
-        self._moveToTickStart = 0
+        if self._moveToTarget then
+            self._moveToTarget = nil
+            self._moveToTimeout = 8
+            self._moveToTickStart = 0
+            self.MoveDirection = Vector3.new()
+        end
+
         return self
     end
 

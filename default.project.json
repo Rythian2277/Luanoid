@@ -3,6 +3,10 @@
   "tree": {
     "$path": "src/Luanoid",
 
+    "Enum": {
+      "$path": "Enum"
+    },
+  
     "Class": {
       "$path": "Opensource-Modules/src/Classes/Class.lua"
     },

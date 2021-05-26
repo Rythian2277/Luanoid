@@ -3,12 +3,12 @@ local CharacterState = require(script.Parent.CharacterState)
 
 local DEFAULT_LOGIC_HANDLER = require(script.logic)
 local DEFAULT_STATE_HANDLERS = {}
-DEFAULT_STATE_HANDLERS[CharacterState.Physics] = require(script.fallingAndPhysics)
-DEFAULT_STATE_HANDLERS[CharacterState.Idling] = require(script.idlingAndWalking)
+DEFAULT_STATE_HANDLERS[CharacterState.Physics] = require(script.FallingAndPhysics)
+DEFAULT_STATE_HANDLERS[CharacterState.Idling] = require(script.IdlingAndWalking)
 DEFAULT_STATE_HANDLERS[CharacterState.Walking] = DEFAULT_STATE_HANDLERS[CharacterState.Idling]
-DEFAULT_STATE_HANDLERS[CharacterState.Jumping] = require(script.jumping)
+DEFAULT_STATE_HANDLERS[CharacterState.Jumping] = require(script.Jumping)
 DEFAULT_STATE_HANDLERS[CharacterState.Falling] = DEFAULT_STATE_HANDLERS[CharacterState.Physics]
-DEFAULT_STATE_HANDLERS[CharacterState.Dead] = require(script.dead)
+DEFAULT_STATE_HANDLERS[CharacterState.Dead] = require(script.Dead)
 
 local StateController = Class() do
     function StateController:init(luanoid)

@@ -19,7 +19,7 @@ return function(self)
 
                     luanoid.Floor = nil
                 end
-            elseif curState ~= CharacterState.Climbing then
+            else
                 if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
                     -- We are grounded
                     if luanoid._jumpInput then
