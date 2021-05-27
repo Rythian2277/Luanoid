@@ -376,7 +376,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:GetNetworkOwner(): Player?
-        local networkOwner = self.RootPart:GetAttribute("NetworkOwner")
+        local networkOwner = self.Character:GetAttribute("NetworkOwner")
         if networkOwner then
             networkOwner = Players[networkOwner]
         end
