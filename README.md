@@ -10,11 +10,15 @@ Features:
 - Supports Animations!
 - Supports Pathfinding!
 - Supports Custom Character Rigs!
-- Supports Custom State Controllers
+- Supports Custom State Controllers!
 
 Coming Soon:
 
 - Tool Compatibility
+
+## Demo
+
+The `Demo` folder contains scripts found in this uncopylocked [demo place](https://www.roblox.com/games/6749296103/Luanoid-Test).
 
 ## API
 
@@ -58,6 +62,7 @@ Proper documentation page will be setup later.
   - UnloadAnimation(`string`animationName)
   - UnloadAnimations()
   - Jump()
+  - TakeDamage(`number`)
   - MoveTo(`Vector3`|`BasePart`, `number?`)
   - CancelMoveTo()
   - AddAccessory(`BasePart`|`Model`|`Accessory`)

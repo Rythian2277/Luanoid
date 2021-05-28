@@ -14,19 +14,21 @@ local StateController = require(script.StateController)
 local CharacterState = require(script.CharacterState)
 
 local Luanoid = Class() do
-    function Luanoid:init(luanoidParams): nil
-        if typeof(luanoidParams) == "Instance" then --// Luanoid model exists, just mounting onto the model.
-            local humanoidRootPart = luanoidParams:WaitForChild("HumanoidRootPart")
-            self.Character = luanoidParams
+    function Luanoid:init(...): nil
+        local args = {...}
+        local luanoidParams = args[1]
+        local character = args[2]
+
+        if character then --// Luanoid model exists, just mounting onto the model.
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            self.Character = character
 			self._mover = humanoidRootPart.Mover
 			self._aligner = humanoidRootPart.Aligner
             self.Animator = self.Character.AnimationController.Animator
 			self.RootPart = humanoidRootPart
         else --// Needs to be created
-            luanoidParams = luanoidParams or {}
-
             self.Character = Instance.new("Model")
-            self.Character.Name = luanoidParams.Name or "NPC"
+            self.Character.Name = luanoidParams and luanoidParams.Name or "NPC"
             local moveDirAttachment = Instance.new("Attachment")
             moveDirAttachment.Name = "MoveDirection"
 
@@ -95,7 +97,7 @@ local Luanoid = Class() do
         self.AccessoryEquipped = Event()
         self.AccessoryUnequipping = Event()
 
-        if type(luanoidParams) == "table" then
+        if luanoidParams then
             self.Health = luanoidParams.Health or 100
             self.MaxHealth = luanoidParams.MaxHealth or 100
             self.WalkSpeed = luanoidParams.WalkSpeed or 16
@@ -115,6 +117,7 @@ local Luanoid = Class() do
             self.JumpPower = 50
             self.HipHeight = 2
             self.StateController = StateController(self)
+            self.AutoRotate = true
         end
 
         local localNetworkOwner
@@ -154,7 +157,7 @@ local Luanoid = Class() do
     function Luanoid:Destroy(): nil
         self._aligner.Attachment1:Destroy()
         self.Character:Destroy()
-        self.StateController:Destroy()
+        --self.StateController:Destroy()
         self:PauseSimulation()
     end
 
@@ -259,6 +262,10 @@ local Luanoid = Class() do
     function Luanoid:Jump()
         self._jumpInput = true
         return self
+    end
+
+    function Luanoid:TakeDamage(damage)
+        self.Health = math.min(self.Health - math.abs(damage), 0)
     end
 
     function Luanoid:MoveTo(target: Target, timeout: number?)

@@ -44,7 +44,7 @@ Player.CharacterAdded:Connect(function(character)
 	Character = character
 	Camera.CameraSubject = character.PrimaryPart
 	Camera.CameraType = Enum.CameraType.Custom
-	CurrentLuanoid = Luanoid(character)
+	CurrentLuanoid = Luanoid(nil, character)
 
 	for animationName, animationData in pairs(ANIMATIONS) do
         CurrentLuanoid:LoadAnimation(
