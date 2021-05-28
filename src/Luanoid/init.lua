@@ -14,11 +14,7 @@ local StateController = require(script.StateController)
 local CharacterState = require(script.CharacterState)
 
 local Luanoid = Class() do
-    function Luanoid:init(...): nil
-        local args = {...}
-        local luanoidParams = args[1]
-        local character = args[2]
-
+    function Luanoid:init(luanoidParams, character: Model?): nil
         if character then --// Luanoid model exists, just mounting onto the model.
             local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
             self.Character = character
@@ -265,7 +261,7 @@ local Luanoid = Class() do
     end
 
     function Luanoid:TakeDamage(damage)
-        self.Health = math.min(self.Health - math.abs(damage), 0)
+        self.Health = math.max(self.Health - math.abs(damage), 0)
     end
 
     function Luanoid:MoveTo(target: Target, timeout: number?)
