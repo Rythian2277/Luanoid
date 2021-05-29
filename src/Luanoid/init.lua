@@ -15,6 +15,8 @@ local CharacterState = require(script.CharacterState)
 
 local Luanoid = Class() do
     function Luanoid:init(luanoidParams, character: Model?): nil
+        luanoidParams = luanoidParams or {}
+
         if character then --// Luanoid model exists, just mounting onto the model.
             local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
             self.Character = character
@@ -22,9 +24,25 @@ local Luanoid = Class() do
 			self._aligner = humanoidRootPart.Aligner
             self.Animator = self.Character.AnimationController.Animator
 			self.RootPart = humanoidRootPart
+
+            self:wrapinstance(
+                character,
+                {
+                    "MoveDirection",
+                    "LookDirection",
+                    "Health",
+                    "MaxHealth",
+                    "WalkSpeed",
+                    "JumpPower",
+                    "HipHeight",
+                    "AutoRotate",
+                }
+            )
         else --// Needs to be created
-            self.Character = Instance.new("Model")
-            self.Character.Name = luanoidParams and luanoidParams.Name or "NPC"
+            character = Instance.new("Model")
+            character.Name = luanoidParams and luanoidParams.Name or "NPC"
+            self.Character = character
+
             local moveDirAttachment = Instance.new("Attachment")
             moveDirAttachment.Name = "MoveDirection"
 
@@ -36,7 +54,7 @@ local Luanoid = Class() do
             humanoidRootPart.Transparency = 1
             humanoidRootPart.Size = Vector3.new(1,1,1)
             humanoidRootPart.RootPriority = 127
-            humanoidRootPart.Parent = self.Character
+            humanoidRootPart.Parent = character
 
             local vectorForce = Instance.new("VectorForce")
             vectorForce.Name = "Mover"
@@ -57,21 +75,41 @@ local Luanoid = Class() do
             lookDirAttachment.Parent = game.Workspace:FindFirstChildWhichIsA("Terrain")
 
             local animationController = Instance.new("AnimationController")
-            animationController.Parent = self.Character
+            animationController.Parent = character
 
             local animator = Instance.new("Animator")
             animator.Parent = animationController
 
             local accessoriesFolder = Instance.new("Folder")
             accessoriesFolder.Name = "Accessories"
-            accessoriesFolder.Parent = self.Character
+            accessoriesFolder.Parent = character
 
-            self.Character.PrimaryPart = humanoidRootPart
+            character.PrimaryPart = humanoidRootPart
 
             self._mover = vectorForce
             self._aligner = alignOrientation
             self.Animator = animator
             self.RootPart = humanoidRootPart
+
+            if luanoidParams.AutoRotate == nil then
+                luanoidParams.AutoRotate = true
+            end
+
+            self:wrapinstance(
+                character,
+                {
+                    MoveDirection = Vector3.new(),
+                    LookDirection = Vector3.new(),
+
+                    Health = luanoidParams.Health or 100,
+                    MaxHealth = luanoidParams.MaxHealth or 100,
+                    WalkSpeed = luanoidParams.WalkSpeed or 16,
+                    JumpPower = luanoidParams.JumpPower or 50,
+                    HipHeight = luanoidParams.HipHeight or 2,
+
+                    AutoRotate = luanoidParams.AutoRotate,
+                }
+            )
         end
 
         self._preSimConnection = nil
@@ -82,8 +120,6 @@ local Luanoid = Class() do
         self._moveToTickStart = 0
         self.RigParts = {}
         self.Motor6Ds = {}
-        self.MoveDirection = Vector3.new()
-        self.LookDirection = Vector3.new()
         self.LastState = CharacterState.Idling
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
@@ -94,26 +130,9 @@ local Luanoid = Class() do
         self.AccessoryUnequipping = Event()
 
         if luanoidParams then
-            self.Health = luanoidParams.Health or 100
-            self.MaxHealth = luanoidParams.MaxHealth or 100
-            self.WalkSpeed = luanoidParams.WalkSpeed or 16
-            self.JumpPower = luanoidParams.JumpPower or 50
-            self.HipHeight = luanoidParams.HipHeight or 2
             self.StateController = (luanoidParams.StateController or StateController)(self)
-
-            if luanoidParams.AutoRotate == nil then
-                self.AutoRotate = true
-            else
-                self.AutoRotate = luanoidParams.AutoRotate
-            end
         else
-            self.Health = 100
-            self.MaxHealth = 100
-            self.WalkSpeed = 16
-            self.JumpPower = 50
-            self.HipHeight = 2
             self.StateController = StateController(self)
-            self.AutoRotate = true
         end
 
         local localNetworkOwner
