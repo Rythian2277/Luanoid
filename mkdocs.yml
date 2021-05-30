@@ -1,0 +1,54 @@
+site_name: Luanoid Documentation
+repo_name: Luanoid
+repo_url: https://github.com/Rythian2277/Luanoid
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github-alt
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  features:
+    - navigation.expand
+    # - navigation.tabs
+
+nav:
+  - Home: index.md
+  - Guide:
+    - Installation: Guide/Installation.md
+  - API: API.md
+
+extra_javascript:
+  - javascripts/tags.js
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed
+
+extra:
+  version:
+    provider: mike
