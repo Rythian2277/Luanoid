@@ -33,7 +33,8 @@ Proper documentation page will be setup later.
   - `number`_moveToTickStart: Time `MoveTo()` was called
   - `Vector3`|`BasePart`_moveToTarget: MoveTo goal
   - `number`_moveToTimeout: Max time spent walking to target
-  - `boolean`_jumpInput
+  - `number`_moveToDeadzoneRadius: Minimum distance to consider target as reached
+  - `boolean`Jump
   - `Model`Character
   - `Animator`Animator
   - `Part`RootPart: HumanoidRootPart
@@ -61,7 +62,6 @@ Proper documentation page will be setup later.
   - StopAnimations()
   - UnloadAnimation(`string`animationName)
   - UnloadAnimations()
-  - Jump()
   - TakeDamage(`number`)
   - MoveTo(`Vector3`|`BasePart`, `number?`)
   - CancelMoveTo()

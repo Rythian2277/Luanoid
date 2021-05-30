@@ -2,6 +2,14 @@ local CharacterState = require(script.Parent.Parent.CharacterState)
 
 local Jumping = {}
 
+function Jumping.Entering(self)
+    self.Luanoid.Jumping:Fire(true)
+end
+
+function Jumping.Leaving(self)
+    self.Luanoid.Jumping:Fire(false)
+end
+
 function Jumping.step(self)
     local luanoid = self.Luanoid
 

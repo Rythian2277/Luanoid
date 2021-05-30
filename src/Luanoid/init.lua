@@ -22,7 +22,7 @@ local Luanoid = Class() do
             self.Character = character
 			self._mover = humanoidRootPart.Mover
 			self._aligner = humanoidRootPart.Aligner
-            self.Animator = self.Character.AnimationController.Animator
+            self.Animator = character.AnimationController.Animator
 			self.RootPart = humanoidRootPart
 
             self:wrapinstance(
@@ -36,6 +36,7 @@ local Luanoid = Class() do
                     "JumpPower",
                     "HipHeight",
                     "AutoRotate",
+                    "Jump",
                 }
             )
         else --// Needs to be created
@@ -52,7 +53,7 @@ local Luanoid = Class() do
             local humanoidRootPart = Instance.new("Part")
             humanoidRootPart.Name = "HumanoidRootPart"
             humanoidRootPart.Transparency = 1
-            humanoidRootPart.Size = Vector3.new(1,1,1)
+            humanoidRootPart.Size = Vector3.new(1, 1, 1)
             humanoidRootPart.RootPriority = 127
             humanoidRootPart.Parent = character
 
@@ -108,16 +109,18 @@ local Luanoid = Class() do
                     HipHeight = luanoidParams.HipHeight or 2,
 
                     AutoRotate = luanoidParams.AutoRotate,
+                    Jump = false,
                 }
             )
         end
 
         self._preSimConnection = nil
-        self.Floor = nil
-        self._jumpInput = false
         self._moveToTarget = nil
-        self._moveToTimeout = 0
+        self._moveToTimeout = 8
         self._moveToTickStart = 0
+        self._moveToDeadzoneRadius = 6
+
+        self.Floor = nil
         self.RigParts = {}
         self.Motor6Ds = {}
         self.LastState = CharacterState.Idling
@@ -125,9 +128,15 @@ local Luanoid = Class() do
         self.AnimationTracks = {}
 
         self.MoveToFinished = Event()
-        self.StateChanged = Event()
         self.AccessoryEquipped = Event()
         self.AccessoryUnequipping = Event()
+
+        self.StateChanged = Event()
+        self.HealthChanged = Event()
+
+        self.Died = Event()
+        self.FreeFalling = Event()
+        self.Jumping = Event()
 
         if luanoidParams then
             self.StateController = (luanoidParams.StateController or StateController)(self)
@@ -146,25 +155,40 @@ local Luanoid = Class() do
         ]]
         self:SetNetworkOwner(localNetworkOwner)
 
-        self.Character.AncestryChanged:Connect(function()
-            if self.Character:IsDescendantOf(game.Workspace) then
+        character.AncestryChanged:Connect(function()
+            if character:IsDescendantOf(game.Workspace) then
                 if self:GetNetworkOwner() == localNetworkOwner then
                     self:ResumeSimulation()
                 end
             else
-                self:PauseSimulation()
+                if self.RootPart.Parent == character then
+                    self:PauseSimulation()
+                else
+                    --[[
+                        We don't pause the simulation to allow the Dead
+                        CharacterState handler to run.
+                    ]]
+                    self:ChangeState(CharacterState.Dead)
+                end
             end
         end)
 
-        self.Character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
+        character:GetAttributeChangedSignal("NetworkOwner"):Connect(function()
             if self:GetNetworkOwner() == localNetworkOwner then
                 self:ResumeSimulation()
             else
                 self:PauseSimulation()
             end
         end)
+        character:GetAttributeChangedSignal("Health"):Connect(function()
+            self.Health = math.clamp(self.Health, 0, self.MaxHealth)
+            self.HealthChanged:Fire(self.Health)
+        end)
+        character:GetAttributeChangedSignal("MaxHealth"):Connect(function()
+            self.Health = math.clamp(self.Health, 0, self.MaxHealth)
+        end)
 
-        if self:GetNetworkOwner() == localNetworkOwner and self.Character:IsDescendantOf(game.Workspace) then
+        if self:GetNetworkOwner() == localNetworkOwner and character:IsDescendantOf(game.Workspace) then
             self:ResumeSimulation()
         end
     end
@@ -274,19 +298,15 @@ local Luanoid = Class() do
         return self
     end
 
-    function Luanoid:Jump()
-        self._jumpInput = true
-        return self
-    end
-
     function Luanoid:TakeDamage(damage)
         self.Health = math.max(self.Health - math.abs(damage), 0)
     end
 
-    function Luanoid:MoveTo(target: Target, timeout: number?)
+    function Luanoid:MoveTo(target: Target, timeout: number?, _moveToDeadzoneRadius: number?)
         self._moveToTarget = target
         self._moveToTimeout = timeout or 8
         self._moveToTickStart = tick()
+        self._moveToDeadzoneRadius = _moveToDeadzoneRadius or 6
         return self
     end
 
@@ -295,13 +315,14 @@ local Luanoid = Class() do
             self._moveToTarget = nil
             self._moveToTimeout = 8
             self._moveToTickStart = 0
+            self._moveToDeadzoneRadius = 6
             self.MoveDirection = Vector3.new()
         end
 
         return self
     end
 
-    function Luanoid:AddAccessory(accessory: CustomAccessory, base: Attachment?, pivot: CFrame?)
+    function Luanoid:AddAccessory(accessory: CustomAccessory, base: Attachment?|BasePart?, pivot: CFrame?)
         local character = self.Character
 
         assert(
@@ -419,7 +440,7 @@ local Luanoid = Class() do
             character:SetAttribute("NetworkOwner", nil)
         end
         if character:IsDescendantOf(workspace) and RunService:IsServer() then
-            character.HumanoidRootPart:SetNetworkOwner(networkOwner)
+            self.RootPart:SetNetworkOwner(networkOwner)
         end
         return self
     end
@@ -445,22 +466,26 @@ local Luanoid = Class() do
         local connection = self._preSimConnection
         if not connection or (connection and not connection.Connected) then
             self._preSimConnection = RunService.Heartbeat:Connect(function(dt)
-                if not self.RootPart:IsGrounded() then
-                    local correctNetworkOwner = self:GetNetworkOwner()
-                    if RunService:IsServer() and correctNetworkOwner ~= self.RootPart:GetNetworkOwner() then
-                        --[[
-                            Roblox has automatically assigned a NetworkOwner
-                            when it shouldn't have. This can cause Luanoids'
-                            physics to become highly unstable.
-                        ]]
-                        self.RootPart:SetNetworkOwner(correctNetworkOwner)
-                    end
-
-                    self.StateController:step(dt)
-                end
+                self:step(dt)
             end)
         end
         return self
+    end
+
+    function Luanoid:step(dt)
+        if not self.RootPart:IsGrounded() then
+            local correctNetworkOwner = self:GetNetworkOwner()
+            if RunService:IsServer() and correctNetworkOwner ~= self.RootPart:GetNetworkOwner() then
+                --[[
+                    Roblox has automatically assigned a NetworkOwner
+                    when it shouldn't have. This can cause Luanoids'
+                    physics to become highly unstable.
+                ]]
+                self.RootPart:SetNetworkOwner(correctNetworkOwner)
+            end
+
+            self.StateController:step(dt)
+        end
     end
 end
 

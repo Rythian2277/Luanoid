@@ -2,16 +2,17 @@ local CharacterState = require(script.Parent.Parent.CharacterState)
 
 return function(self)
     local luanoid = self.Luanoid
+    local rootPart = luanoid.RootPart
     local curState = luanoid.State
-    local groundDistanceGoal = luanoid.HipHeight + luanoid.Character.HumanoidRootPart.Size.Y / 2
-    local currentVelocityY = luanoid.Character.HumanoidRootPart.AssemblyLinearVelocity.Y
+    local groundDistanceGoal = luanoid.HipHeight + rootPart.Size.Y / 2
+    local currentVelocityY = rootPart.AssemblyLinearVelocity.Y
     local raycastResult = self.RaycastResult
 
     local newState
     if luanoid.Health <= 0 then
         newState = CharacterState.Dead
     else
-        if luanoid.Character.HumanoidRootPart:GetRootPart() == luanoid.Character.HumanoidRootPart then
+        if rootPart:GetRootPart() == rootPart then
             if curState == CharacterState.Jumping then
                 if currentVelocityY < 0 then
                     -- We passed the peak of the jump and are now falling downward
@@ -20,10 +21,10 @@ return function(self)
                     luanoid.Floor = nil
                 end
             else
-                if raycastResult and (luanoid.Character.HumanoidRootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
+                if raycastResult and (rootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
                     -- We are grounded
-                    if luanoid._jumpInput then
-                        luanoid._jumpInput = false
+                    if luanoid.Jump then
+                        luanoid.Jump = false
                         newState = CharacterState.Jumping
                     else
                         if luanoid.MoveDirection.Magnitude > 0 then

@@ -18,8 +18,9 @@ local IdlingAndWalking = {}
 
 function IdlingAndWalking.step(self, dt)
     local luanoid = self.Luanoid
+    local rootPart = luanoid.RootPart
     local hipHeight = luanoid.HipHeight
-    local velocity = luanoid.Character.HumanoidRootPart.AssemblyLinearVelocity
+    local velocity = rootPart.AssemblyLinearVelocity
     local currentVelocityX = velocity.X
     local currentVelocityY = velocity.Y
     local currentVelocityZ = velocity.Z
@@ -56,8 +57,8 @@ function IdlingAndWalking.step(self, dt)
             0.001
         )
     end
-    local targetHeight = groundPos.Y + hipHeight + luanoid.Character.HumanoidRootPart.Size.Y / 2
-    local currentHeight = luanoid.Character.HumanoidRootPart.Position.Y
+    local targetHeight = groundPos.Y + hipHeight + rootPart.Size.Y / 2
+    local currentHeight = rootPart.Position.Y
     local aUp
     local t = 0.05
     aUp = workspace.Gravity + 2*((targetHeight - currentHeight) - currentVelocityY*t)/(t*t)
@@ -73,7 +74,7 @@ function IdlingAndWalking.step(self, dt)
 
     mover.Enabled = true
     aligner.Enabled = true
-    mover.Force = Vector3.new(aX, aUp, aZ) * luanoid.Character.HumanoidRootPart.AssemblyMass
+    mover.Force = Vector3.new(aX, aUp, aZ) * rootPart.AssemblyMass
 
     -- Look direction stuff
     if luanoid.MoveDirection.Magnitude > 0 and luanoid.AutoRotate then

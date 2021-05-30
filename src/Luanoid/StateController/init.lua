@@ -73,18 +73,24 @@ local StateController = Class() do
 
     function StateController:step(dt)
         local luanoid = self.Luanoid
+        local rootPart = luanoid.RootPart
 
-        if luanoid._moveToTarget then
-            if tick() - luanoid._moveToTickStart < luanoid._moveToTimeout then
-                if typeof(luanoid._moveToTarget) == "Instance" then
-                    luanoid._moveToTarget = luanoid._moveToTarget.Position
+        local movetoTarget = luanoid._moveToTarget
+        local moveToTickStart = luanoid._moveToTickStart
+        local moveToTimeout = luanoid._moveToTimeout
+        local movetoDeadzoneRadius = luanoid._moveToDeadzoneRadius
+
+        if movetoTarget then
+            if tick() - moveToTickStart < moveToTimeout then
+                if typeof(movetoTarget) == "Instance" then
+                    movetoTarget = movetoTarget.Position
                 end
 
-                if math.abs(luanoid._moveToTarget.X - luanoid.Character.HumanoidRootPart.Position.X) < luanoid.Character:GetExtentsSize().X / 2 and math.abs(luanoid._moveToTarget.Y - luanoid.Character.HumanoidRootPart.Position.Y) < luanoid.Character:GetExtentsSize().Y and math.abs(luanoid._moveToTarget.Z - luanoid.Character.HumanoidRootPart.Position.Z) < luanoid.Character:GetExtentsSize().Z / 2 then
+                if (movetoTarget - rootPart.Position).Magnitude < movetoDeadzoneRadius then
                     luanoid:CancelMoveTo()
                     luanoid.MoveToFinished:Fire(true)
                 else
-                    luanoid.MoveDirection = (luanoid._moveToTarget - luanoid.Character.HumanoidRootPart.Position).Unit
+                    luanoid.MoveDirection = (movetoTarget - rootPart.Position).Unit
                 end
             else
                 luanoid:CancelMoveTo()
@@ -93,7 +99,7 @@ local StateController = Class() do
         end
 
         -- Calculating state logic
-        self.RaycastResult = self:CastCollideOnly(luanoid.Character.HumanoidRootPart.Position, Vector3.new(0, -(luanoid.HipHeight + luanoid.Character.HumanoidRootPart.Size.Y / 2), 0))
+        self.RaycastResult = self:CastCollideOnly(rootPart.Position, Vector3.new(0, -(luanoid.HipHeight + rootPart.Size.Y / 2), 0))
         local curState = luanoid.State
         local newState = self:Logic(dt)
 

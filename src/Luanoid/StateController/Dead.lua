@@ -1,5 +1,15 @@
 local Dead = {}
 
+function Dead.Entering(self)
+    self.Luanoid.Died:Fire(true)
+    self.Luanoid:StopAnimations()
+    self.Luanoid:PauseSimulation()
+end
+
+function Dead.Leaving(self)
+    self.Luanoid.Died:Fire(false)
+end
+
 function Dead.step(self)
     local luanoid = self.Luanoid
 
