@@ -187,6 +187,14 @@ local Luanoid = Class() do
         character:GetAttributeChangedSignal("MaxHealth"):Connect(function()
             self.Health = math.clamp(self.Health, 0, self.MaxHealth)
         end)
+        character:GetAttributeChangedSignal("MoveDirection"):Connect(function()
+            local moveDir = self.MoveDirection
+            self.MoveDirection = Vector3.new(moveDir.X, 0, moveDir.Z)
+        end)
+        character:GetAttributeChangedSignal("LookDirection"):Connect(function()
+            local lookDir = self.LookDirection
+            self.LookDirection = Vector3.new(lookDir.X, 0, lookDir.Z)
+        end)
 
         if self:GetNetworkOwner() == localNetworkOwner and character:IsDescendantOf(game.Workspace) then
             self:ResumeSimulation()

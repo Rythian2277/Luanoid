@@ -29,9 +29,9 @@ function IdlingAndWalking.step(self, dt)
     local groundPos = self.RaycastResult.Position
     local targetVelocity = Vector3.new()
 
-    luanoid.MoveDirection = Vector3.new(luanoid.MoveDirection.X, 0, luanoid.MoveDirection.Z)
-    if luanoid.MoveDirection.Magnitude > 0 then
-        targetVelocity = Vector3.new(luanoid.MoveDirection.X, 0, luanoid.MoveDirection.Z).Unit * luanoid.WalkSpeed
+    local moveDir = luanoid.MoveDirection
+    if moveDir.Magnitude > 0 then
+        targetVelocity = Vector3.new(moveDir.X, 0, moveDir.Z).Unit * luanoid.WalkSpeed
     end
 
     self._accumulatedTime = (self._accumulatedTime or 0) + dt
