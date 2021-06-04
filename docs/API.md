@@ -140,6 +140,13 @@ In the default StateController this is the force multiplied by character
 In the default StateController this is the distance from the bottom of the
 HumanoidRootPart to the surface the Luanoid is on to define levitation height.
 
+### MaxSlopeAngle
+
+`number`
+
+In the default StateController this is the maximum slope angle that the Luanoid
+can climb. If the angle of a slope is greater they will slide down the slope.
+
 ### AutoRotate
 
 `boolean`
