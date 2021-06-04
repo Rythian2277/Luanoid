@@ -44,7 +44,7 @@ local ANIMATIONS = {
 local DOGU15_RIG
 
 if RunService:IsServer() then
-    DOGU15_RIG = InsertService:LoadAsset(6324529033).R15Rig
+    DOGU15_RIG = ReplicatedStorage:FindFirstChild("R15Rig") or InsertService:LoadAsset(6324529033).R15Rig
     DOGU15_RIG.Parent = ReplicatedStorage
 else
     DOGU15_RIG = ReplicatedStorage:WaitForChild("R15Rig")

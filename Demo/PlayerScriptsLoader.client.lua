@@ -71,6 +71,7 @@ Player.CharacterAdded:Connect(function(character)
         Events such as HealthChanged, Died, and Jumping can be detected through
         the Luanoid's character attributes.
     ]]
+    --[[
     luanoid.StateChanged:Connect(function(newState, oldState)
         print("CharacterState changed from", oldState.Name, "to", newState.Name)
     end)
@@ -90,6 +91,7 @@ Player.CharacterAdded:Connect(function(character)
     luanoid.Jumping:Connect(function(isJumping)
         print("Jumping is", isJumping)
     end)
+    ]]
 end)
 
 --[[
