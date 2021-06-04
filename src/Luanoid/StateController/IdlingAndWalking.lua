@@ -1,3 +1,9 @@
+local FRAMERATE = 1 / 240
+local STIFFNESS = 300
+local DAMPING = 30
+local PRECISION = 0.001
+local POP_TIME = 0.05
+
 local function StepSpring(framerate, position, velocity, destination, stiffness, damping, precision)
 	local displacement = position - destination
 	local springForce = -stiffness * displacement
@@ -36,41 +42,68 @@ function IdlingAndWalking.step(self, dt)
 
     self._accumulatedTime = (self._accumulatedTime or 0) + dt
 
-    while self._accumulatedTime >= 1 / 240 do
-        self._accumulatedTime = self._accumulatedTime - 1 / 240
+    while self._accumulatedTime >= FRAMERATE do
+        self._accumulatedTime = self._accumulatedTime - FRAMERATE
+
         currentVelocityX, self._currentAccelerationX = StepSpring(
-            1 / 240,
+            FRAMERATE,
             currentVelocityX,
             self._currentAccelerationX or 0,
             targetVelocity.X,
-            170,
-            22,
-            0.001
+            STIFFNESS,
+            DAMPING,
+            PRECISION
         )
+
         currentVelocityZ, self._currentAccelerationZ = StepSpring(
-            1 / 240,
+            FRAMERATE,
             currentVelocityZ,
             self._currentAccelerationZ or 0,
             targetVelocity.Z,
-            170,
-            22,
-            0.001
+            STIFFNESS,
+            DAMPING,
+            PRECISION
         )
     end
+
+    local g = workspace.Gravity
     local targetHeight = groundPos.Y + hipHeight + rootPart.Size.Y / 2
     local currentHeight = rootPart.Position.Y
-    local aUp
-    local t = 0.05
-    aUp = workspace.Gravity + 2*((targetHeight - currentHeight) - currentVelocityY*t)/(t*t)
+    local aUp = g + 2*((targetHeight - currentHeight) - currentVelocityY*POP_TIME)/(POP_TIME^2)
     local deltaHeight = math.max((targetHeight - currentHeight)*1.01, 0)
     deltaHeight = math.min(deltaHeight, hipHeight)
-    local maxUpVelocity = math.sqrt(2.0*workspace.Gravity*deltaHeight)
+    local maxUpVelocity = math.sqrt(2.0*g*deltaHeight)
     local maxUpImpulse = math.max((maxUpVelocity - currentVelocityY)*60, 0)
     aUp = math.min(aUp, maxUpImpulse)
     aUp = math.max(-1, aUp)
 
     local aX = self._currentAccelerationX
     local aZ = self._currentAccelerationZ
+
+    local normal = self.RaycastResult.Normal
+    local maxSlopeAngle = math.rad(luanoid.MaxSlopeAngle)
+    local maxInclineTan = math.tan(maxSlopeAngle)
+    local maxInclineStartTan = math.tan(math.max(0, maxSlopeAngle - math.rad(2.5)))
+    local steepness = math.clamp((Vector2.new(normal.X, normal.Z).Magnitude/normal.Y - maxInclineStartTan) / (maxInclineTan - maxInclineStartTan), 0, 1)
+    if steepness > 0 then
+        -- deflect control acceleration off slope normal, discarding the parallell component
+        local aControl = Vector3.new(aX, 0, aZ)
+        local dot = math.min(0, normal:Dot(aControl)) -- clamp below 0, don't subtract forces away from normal
+        local aInto = normal*dot
+        local aPerp = aControl - aInto
+        local aNew = aPerp
+        aNew = aControl:Lerp(aNew, steepness)
+        aX, aZ = aNew.X, aNew.Z
+        -- mass on a frictionless incline: net acceleration = g * sin(incline angle)
+        local aGravity = Vector3.new(0, -g, 0)
+        dot = math.min(0, normal:Dot(aGravity))
+        aInto = normal*dot
+        aPerp = aGravity - aInto
+        aNew = aPerp
+        aX, aZ = aX + aNew.X*steepness, aZ + aNew.Z*steepness
+        aUp = aUp + aNew.Y*steepness
+        aUp = math.max(0, aUp)
+    end
 
     mover.Enabled = true
     aligner.Enabled = true

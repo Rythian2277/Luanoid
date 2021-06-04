@@ -18,80 +18,8 @@ Coming Soon:
 
 ## Demo
 
-The `Demo` folder contains scripts found in this uncopylocked [demo place](https://www.roblox.com/games/6749296103/Luanoid-Test).
+The `Demo` folder contains scripts and this uncopylocked [demo place](https://www.roblox.com/games/6749296103/Luanoid-Test) as a `.rbxl`.
 
-## API
+## Documentation
 
-Proper documentation page will be setup later.
-
-### Luanoid
-
-- Properties
-  - `VectorForce`_mover: Levitates the Luanoid
-  - `AlignOrientation`_aligner: Keeps the Luanoid upright
-  - `RBXScriptConnection`_preSimConnection
-  - `number`_moveToTickStart: Time `MoveTo()` was called
-  - `Vector3`|`BasePart`_moveToTarget: MoveTo goal
-  - `number`_moveToTimeout: Max time spent walking to target
-  - `number`_moveToDeadzoneRadius: Minimum distance to consider target as reached
-  - `boolean`Jump
-  - `Model`Character
-  - `Animator`Animator
-  - `Part`RootPart: HumanoidRootPart
-  - `BasePart`Floor: Instance the Luanoid is standing on
-  - `List`RigParts
-  - `Vector3`MoveDirection: Direction to walk towards
-  - `Vector3`LookDirection: Direction to look towards
-  - `Enum`LastState: Previous `CharacterState`
-  - `Enum`State: Current `CharacterState`
-  - `Dictionary`AnimationTracks
-  - `number`Health
-  - `number`MaxHealth
-  - `number`WalkSpeed
-  - `number`JumpPower
-  - `number`HipHeight
-  - `StateController`StateController
-  - `boolean`AutoRotate: Look in the direction walking
-- Methods
-  - Destroy()
-  - SetRig(`Model`rig)
-  - RemoveRig()
-  - LoadAnimation(`Animation`animation, `string?`animationName)
-  - PlayAnimation(`string`animationName)
-  - StopAnimation(`string`animationName)
-  - StopAnimations()
-  - UnloadAnimation(`string`animationName)
-  - UnloadAnimations()
-  - TakeDamage(`number`)
-  - MoveTo(`Vector3`|`BasePart`, `number?`)
-  - CancelMoveTo()
-  - AddAccessory(`BasePart`|`Model`|`Accessory`)
-  - RemoveAccessory(`BasePart`|`Model`|`Accessory`)
-  - RemoveAccessories()
-  - GetAccessories()
-  - GetNetworkOwner()
-  - SetNetworkOwner(`Player?`player)
-  - ChangeState(`Enum`state)
-  - PauseSimulation()
-  - ResumeSimulation()
-- Events
-  - MoveToFinished: `boolean`success
-  - StateChanged: `Enum`newState, `Enum`previousState
-  - AccessoryEquipped: `Instance`accessory
-  - AccessoryUnequipping: `Instance`accessory
-
-### StateController
-
-All StateControllers require a `step()` method to be defined.
-
-- Methods
-  - step(`number`dt)
-
-### CharacterState
-
-- Physics
-- Idling
-- Walking
-- Jumping
-- Falling
-- Dead
+Documentation can be found [here](https://rythian2277.github.io/Luanoid/).

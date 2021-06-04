@@ -35,6 +35,7 @@ local Luanoid = Class() do
                     "WalkSpeed",
                     "JumpPower",
                     "HipHeight",
+                    "MaxSlopeAngle",
                     "AutoRotate",
                     "Jump",
                 }
@@ -107,6 +108,7 @@ local Luanoid = Class() do
                     WalkSpeed = luanoidParams.WalkSpeed or 16,
                     JumpPower = luanoidParams.JumpPower or 50,
                     HipHeight = luanoidParams.HipHeight or 2,
+                    MaxSlopeAngle = luanoidParams.MaxSlopeAngle or 89,
 
                     AutoRotate = luanoidParams.AutoRotate,
                     Jump = false,
@@ -186,6 +188,9 @@ local Luanoid = Class() do
         end)
         character:GetAttributeChangedSignal("MaxHealth"):Connect(function()
             self.Health = math.clamp(self.Health, 0, self.MaxHealth)
+        end)
+        character:GetAttributeChangedSignal("MaxSlopeAngle"):Connect(function()
+            self.Health = math.clamp(self.MaxSlopeAngle, 0, 89)
         end)
         character:GetAttributeChangedSignal("MoveDirection"):Connect(function()
             local moveDir = self.MoveDirection
