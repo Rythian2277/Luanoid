@@ -190,7 +190,7 @@ local Luanoid = Class() do
             self.Health = math.clamp(self.Health, 0, self.MaxHealth)
         end)
         character:GetAttributeChangedSignal("MaxSlopeAngle"):Connect(function()
-            self.Health = math.clamp(self.MaxSlopeAngle, 0, 89)
+            self.MaxSlopeAngle = math.clamp(self.MaxSlopeAngle, 0, 89)
         end)
         character:GetAttributeChangedSignal("MoveDirection"):Connect(function()
             local moveDir = self.MoveDirection
