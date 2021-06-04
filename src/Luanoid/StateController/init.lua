@@ -1,3 +1,5 @@
+local RAYCAST_CUSHION = 2
+
 local Class = require(script.Parent.Class)
 local CharacterState = require(script.Parent.CharacterState)
 
@@ -99,7 +101,55 @@ local StateController = Class() do
         end
 
         -- Calculating state logic
-        self.RaycastResult = self:CastCollideOnly(rootPart.Position, Vector3.new(0, -(luanoid.HipHeight + rootPart.Size.Y / 2), 0))
+        --self.RaycastResult = self:CastCollideOnly(rootPart.Position, Vector3.new(0, -(luanoid.HipHeight + rootPart.Size.Y / 2) - RAYCAST_CUSHION, 0))
+        do
+            local hrpSize = rootPart.Size
+            local rayDir = Vector3.new(0, -(luanoid.HipHeight + hrpSize.Y / 2) - RAYCAST_CUSHION, 0)
+            local center = self:CastCollideOnly(
+                rootPart.Position,
+                rayDir
+            )
+            local topleft = self:CastCollideOnly(
+                (rootPart.CFrame * CFrame.new(-hrpSize.X/2, 0, -hrpSize.Z/2)).Position,
+                rayDir
+            )
+            local topright = self:CastCollideOnly(
+                (rootPart.CFrame * CFrame.new(hrpSize.X/2, 0, -hrpSize.Z/2)).Position,
+                rayDir
+            )
+            local bottomleft = self:CastCollideOnly(
+                (rootPart.CFrame * CFrame.new(-hrpSize.X/2, 0, hrpSize.Z/2)).Position,
+                rayDir
+            )
+            local bottomright = self:CastCollideOnly(
+                (rootPart.CFrame * CFrame.new(hrpSize.X/2, 0, hrpSize.Z/2)).Position,
+                rayDir
+            )
+            local raycastResults = {
+                center,
+                topleft,
+                topright,
+                bottomleft,
+                bottomright,
+            }
+
+            table.sort(raycastResults, function(a, b)
+                return (a and a.Position.Y or -math.huge) > (b and b.Position.Y or -math.huge)
+            end)
+
+            --[[
+                self.RaycastResult will be the RaycastResult with the highest
+                altitude while self.RaycastResults will detail all Raycasts
+            ]]
+            self.RaycastResult = raycastResults[1]
+            self.RaycastResults = {
+                Center = center,
+                TopLeft = topleft,
+                TopRight = topright,
+                bottomleft = bottomleft,
+                bottomright = bottomright,
+            }
+        end
         local curState = luanoid.State
         local newState = self:Logic(dt)
 

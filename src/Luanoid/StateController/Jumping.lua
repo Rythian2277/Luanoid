@@ -16,8 +16,9 @@ function Jumping.step(self)
     luanoid._mover.Enabled = false
     luanoid._aligner.Enabled = true
 
+    local rootPart = luanoid.RootPart
     if luanoid.State ~= CharacterState.Jumping then
-        luanoid.Character.HumanoidRootPart:ApplyImpulse(Vector3.new(0, luanoid.JumpPower * luanoid.Character.HumanoidRootPart.AssemblyMass, 0))
+        rootPart:ApplyImpulse(Vector3.new(0, luanoid.JumpPower * rootPart.AssemblyMass, 0))
     end
 
     if luanoid.LookDirection.Magnitude > 0 then

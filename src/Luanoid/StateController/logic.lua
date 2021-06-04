@@ -1,10 +1,12 @@
+local RAYCAST_CUSHION = 2
+
 local CharacterState = require(script.Parent.Parent.CharacterState)
 
 return function(self)
     local luanoid = self.Luanoid
     local rootPart = luanoid.RootPart
     local curState = luanoid.State
-    local groundDistanceGoal = luanoid.HipHeight + rootPart.Size.Y / 2
+    local groundDistanceGoal = luanoid.HipHeight + rootPart.Size.Y / 2 + RAYCAST_CUSHION
     local currentVelocityY = rootPart.AssemblyLinearVelocity.Y
     local raycastResult = self.RaycastResult
 
@@ -24,7 +26,6 @@ return function(self)
                 if raycastResult and (rootPart.Position - raycastResult.Position).Magnitude < groundDistanceGoal then
                     -- We are grounded
                     if luanoid.Jump then
-                        luanoid.Jump = false
                         newState = CharacterState.Jumping
                     else
                         if luanoid.MoveDirection.Magnitude > 0 then
@@ -48,6 +49,7 @@ return function(self)
             luanoid.Floor = nil
         end
     end
+    luanoid.Jump = false
 
     return newState or curState
 end
