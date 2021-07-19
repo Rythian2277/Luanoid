@@ -344,6 +344,11 @@ local Luanoid = Class() do
             "Expected Instance as Argument #1"
         )
 
+        local existingWeldConstraint = accessory:FindFirstChild("AccessoryWeldConstraint", true)
+        if existingWeldConstraint then
+            existingWeldConstraint:Destroy()
+        end
+
         local primaryPart = accessory
         if accessory:IsA("Accessory") then
             -- Accessory is a Roblox accessory
@@ -379,6 +384,7 @@ local Luanoid = Class() do
 
             accessory:PivotTo(pivot)
         end
+
         local weldConstraint = Instance.new("WeldConstraint")
         weldConstraint.Name = "AccessoryWeldConstraint"
         weldConstraint.Part0 = primaryPart
