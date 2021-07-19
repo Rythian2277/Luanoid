@@ -129,6 +129,8 @@ local Luanoid = Class() do
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
 
+        self.RigChanged = Event()
+
         self.MoveToFinished = Event()
         self.AccessoryEquipped = Event()
         self.AccessoryUnequipping = Event()
@@ -244,6 +246,8 @@ local Luanoid = Class() do
         end
         humanoidRootPart.Size = rig.HumanoidRootPart.Size
         rig:Destroy()
+
+        self.RigChanged:Fire(character)
 
         return self
     end
