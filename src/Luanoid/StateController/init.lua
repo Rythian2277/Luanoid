@@ -36,7 +36,7 @@ local StateController = Class() do
             if self.StateHandlers[oldState] then
                 local leaving = self.StateHandlers[oldState].Leaving
                 if leaving then
-                    leaving(self)
+                    leaving(self, newState)
                 end
             end
             if self.StateHandlers[newState] then
