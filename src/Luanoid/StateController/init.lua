@@ -33,8 +33,8 @@ local StateController = Class() do
         self.RaycastParams = raycastParams
 
         luanoid.StateChanged:Connect(function(newState, oldState)
-            if self.StateHandlers[newState] then
-                local leaving = self.StateHandlers[newState].Leaving
+            if self.StateHandlers[oldState] then
+                local leaving = self.StateHandlers[oldState].Leaving
                 if leaving then
                     leaving(self)
                 end
