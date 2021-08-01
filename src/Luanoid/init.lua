@@ -121,6 +121,8 @@ local Luanoid = Class() do
         self._moveToTimeout = 8
         self._moveToTickStart = 0
         self._moveToDeadzoneRadius = 6
+        self._stateEnterTime = 0
+        self._stateEnterPosition = Vector3.new()
 
         self.Floor = nil
         self.RigParts = {}
@@ -339,6 +341,7 @@ local Luanoid = Class() do
         return self
     end
 
+    -- Accessories can be BasePart, Model, or Accessory
     function Luanoid:AddAccessory(accessory: CustomAccessory, base: Attachment?|BasePart?, pivot: CFrame?)
         local character = self.Character
 
@@ -441,6 +444,11 @@ local Luanoid = Class() do
         end
     end
 
+    --[[
+        This is different from the native GetNetworkOwner() method as it checks
+        an attribute of who the NetworkOwner should be not who it currently
+        is which also allows the client to call this method as well
+    ]]
     function Luanoid:GetNetworkOwner(): Player?
         local networkOwner = self.Character:GetAttribute("NetworkOwner")
         if networkOwner then
@@ -473,8 +481,22 @@ local Luanoid = Class() do
         if newState ~= curState then
             self.LastState = curState
             self.State = newState
+            self._stateEnterTime = os.clock()
+            self._stateEnterPosition = self.RootPart.Position
             self.StateChanged:Fire(self.State, self.LastState)
         end
+    end
+
+    function Luanoid:GetStateElapsedTime()
+        return os.clock() - self._stateEnterTime
+    end
+
+    --[[
+        Returns a Vector3 of the position the character was at when ChangeState
+        was last called.
+    ]]
+    function Luanoid:GetStateEnteredPosition()
+        return self._stateEnterPosition
     end
 
     function Luanoid:PauseSimulation()
