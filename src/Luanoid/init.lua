@@ -13,6 +13,9 @@ local Event = require(script.Event)
 local StateController = require(script.StateController)
 local CharacterState = require(script.CharacterState)
 
+local IS_CLIENT = RunService:IsClient()
+local IS_SERVER = RunService:IsServer()
+
 local Luanoid = Class() do
     function Luanoid:init(luanoidParams, character: Model?): nil
         luanoidParams = luanoidParams or {}
@@ -151,15 +154,18 @@ local Luanoid = Class() do
         end
 
         local localNetworkOwner
-        if RunService:IsClient() then
+        if IS_CLIENT then
             localNetworkOwner = Players.LocalPlayer
         end
-        --[[
-            If we are on a Client the localNetworkOwner is the player while on
-            the server the localNetworkOwner is nil which represents the
-            server.
-        ]]
-        self:SetNetworkOwner(localNetworkOwner)
+
+        if not self:GetNetworkOwner() and not self:IsNetworkOwnerServer() then
+            --[[
+                If we are on a Client the localNetworkOwner is the player while on
+                the server the localNetworkOwner is nil which represents the
+                server.
+            ]]
+            self:SetNetworkOwner(localNetworkOwner)
+        end
 
         character.AncestryChanged:Connect(function()
             if character:IsDescendantOf(game.Workspace) then
@@ -337,7 +343,6 @@ local Luanoid = Class() do
             self._moveToDeadzoneRadius = 6
             self.MoveDirection = Vector3.new()
         end
-
         return self
     end
 
@@ -450,30 +455,35 @@ local Luanoid = Class() do
         is which also allows the client to call this method as well
     ]]
     function Luanoid:GetNetworkOwner(): Player?
-        local networkOwner = self.Character:GetAttribute("NetworkOwner")
-        if networkOwner then
-            networkOwner = Players[networkOwner]
+        local networkOwnerString = self.Character:GetAttribute("NetworkOwner")
+        if not networkOwnerString or networkOwnerString == "_SERVER_" then
+            return nil
+        else
+            return Players[networkOwnerString]
         end
-        return networkOwner
     end
 
     function Luanoid:SetNetworkOwner(networkOwner: Player?)
         assert(
             networkOwner == nil
             or (typeof(networkOwner) == "Instance" and networkOwner:IsA("Player")),
-            "Expected nil or Player as Argument #1"
+            "Expected string or Player as Argument #1"
         )
 
         local character = self.Character
         if networkOwner then
             character:SetAttribute("NetworkOwner", networkOwner.Name)
         else
-            character:SetAttribute("NetworkOwner", nil)
+            character:SetAttribute("NetworkOwner", "_SERVER_")
         end
-        if character:IsDescendantOf(workspace) and RunService:IsServer() then
+        if character:IsDescendantOf(workspace) and IS_SERVER then
             self.RootPart:SetNetworkOwner(networkOwner)
         end
         return self
+    end
+
+    function Luanoid:IsNetworkOwnerServer(): boolean
+        return self.Character:GetAttribute("NetworkOwner") == "_SERVER_"
     end
 
     function Luanoid:ChangeState(newState)
@@ -485,9 +495,10 @@ local Luanoid = Class() do
             self._stateEnterPosition = self.RootPart.Position
             self.StateChanged:Fire(self.State, self.LastState)
         end
+        return self
     end
 
-    function Luanoid:GetStateElapsedTime()
+    function Luanoid:GetStateElapsedTime(): number
         return os.clock() - self._stateEnterTime
     end
 
@@ -495,7 +506,7 @@ local Luanoid = Class() do
         Returns a Vector3 of the position the character was at when ChangeState
         was last called.
     ]]
-    function Luanoid:GetStateEnteredPosition()
+    function Luanoid:GetStateEnteredPosition(): Vector3
         return self._stateEnterPosition
     end
 
@@ -520,7 +531,7 @@ local Luanoid = Class() do
     function Luanoid:step(dt)
         if not self.RootPart:IsGrounded() then
             local correctNetworkOwner = self:GetNetworkOwner()
-            if RunService:IsServer() and correctNetworkOwner ~= self.RootPart:GetNetworkOwner() then
+            if IS_SERVER and correctNetworkOwner ~= self.RootPart:GetNetworkOwner() then
                 --[[
                     Roblox has automatically assigned a NetworkOwner
                     when it shouldn't have. This can cause Luanoids'
@@ -531,6 +542,7 @@ local Luanoid = Class() do
 
             self.StateController:step(dt)
         end
+        return self
     end
 end
 
