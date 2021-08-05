@@ -459,7 +459,7 @@ local Luanoid = Class() do
         if not networkOwnerString or networkOwnerString == "_SERVER_" then
             return nil
         else
-            return Players[networkOwnerString]
+            return Players:FindFirstChild(networkOwnerString)
         end
     end
 
