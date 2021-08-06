@@ -342,6 +342,7 @@ local Luanoid = Class() do
             self._moveToTickStart = 0
             self._moveToDeadzoneRadius = 6
             self.MoveDirection = Vector3.new()
+            self.MoveToFinished:Fire(false)
         end
         return self
     end
