@@ -77,26 +77,24 @@ local StateController = Class() do
         local luanoid = self.Luanoid
         local rootPart = luanoid.RootPart
 
-        local movetoTarget = luanoid._moveToTarget
+        local moveToTarget = luanoid._moveToTarget
+        local moveToOptions = luanoid._moveToOptions
         local moveToTickStart = luanoid._moveToTickStart
-        local moveToTimeout = luanoid._moveToTimeout
-        local movetoDeadzoneRadius = luanoid._moveToDeadzoneRadius
 
-        if movetoTarget then
-            if tick() - moveToTickStart < moveToTimeout then
-                if typeof(movetoTarget) == "Instance" then
-                    movetoTarget = movetoTarget.Position
+        if moveToTarget then
+            if tick() - moveToTickStart < moveToOptions.Timeout then
+                if typeof(moveToTarget) == "Instance" then
+                    moveToTarget = moveToTarget.Position
                 end
 
-                if (movetoTarget - rootPart.Position).Magnitude < movetoDeadzoneRadius then
-                    luanoid:CancelMoveTo()
+                if (moveToTarget - rootPart.Position).Magnitude < moveToOptions.DeadzoneRadius then
+                    luanoid:_resetMoveTo()
                     luanoid.MoveToFinished:Fire(true)
                 else
-                    luanoid.MoveDirection = (movetoTarget - rootPart.Position).Unit
+                    luanoid.MoveDirection = (moveToTarget - rootPart.Position).Unit
                 end
             else
                 luanoid:CancelMoveTo()
-                luanoid.MoveToFinished:Fire(false)
             end
         end
 

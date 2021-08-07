@@ -96,10 +96,6 @@ local Luanoid = Class() do
             self.Animator = animator
             self.RootPart = humanoidRootPart
 
-            if luanoidParams.AutoRotate == nil then
-                luanoidParams.AutoRotate = true
-            end
-
             self:wrapinstance(
                 character,
                 {
@@ -113,7 +109,7 @@ local Luanoid = Class() do
                     HipHeight = luanoidParams.HipHeight or 2,
                     MaxSlopeAngle = luanoidParams.MaxSlopeAngle or 89,
 
-                    AutoRotate = luanoidParams.AutoRotate,
+                    AutoRotate = luanoidParams.AutoRotate == nil and true or luanoidParams.AutoRotate,
                     Jump = false,
                 }
             )
@@ -121,9 +117,12 @@ local Luanoid = Class() do
 
         self._preSimConnection = nil
         self._moveToTarget = nil
-        self._moveToTimeout = 8
         self._moveToTickStart = 0
-        self._moveToDeadzoneRadius = 6
+        self._moveToOptions = {
+            Timeout = 8,
+            DeadzoneRadius = 6,
+            ResetOnFinish = true,
+        }
         self._stateEnterTime = 0
         self._stateEnterPosition = Vector3.new()
 
@@ -214,6 +213,20 @@ local Luanoid = Class() do
         if self:GetNetworkOwner() == localNetworkOwner and character:IsDescendantOf(game.Workspace) then
             self:ResumeSimulation()
         end
+    end
+
+    function Luanoid:_resetMoveTo()
+        if self._moveToOptions.ResetOnFinish then
+            self.MoveDirection = Vector3.new()
+        end
+
+        self._moveToTarget = nil
+        self._moveToTickStart = 0
+        self._moveToOptions = {
+            Timeout = 8,
+            DeadzoneRadius = 6,
+            ResetOnFinish = true,
+        }
     end
 
     function Luanoid:Destroy(): nil
@@ -327,21 +340,22 @@ local Luanoid = Class() do
         self.Health = math.max(self.Health - math.abs(damage), 0)
     end
 
-    function Luanoid:MoveTo(target: Target, timeout: number?, _moveToDeadzoneRadius: number?)
+    function Luanoid:MoveTo(target: Target, options)
+        options = options or {}
+        options.Timeout = options.Timeout or 8
+        options.DeadzoneRadius = options.DeadzoneRadius or 6
+        options.ResetOnFinish = options.ResetOnFinish == nil and true or options.ResetOnFinish
+
         self._moveToTarget = target
-        self._moveToTimeout = timeout or 8
         self._moveToTickStart = tick()
-        self._moveToDeadzoneRadius = _moveToDeadzoneRadius or 6
+        self._moveToOptions = options
         return self
     end
 
     function Luanoid:CancelMoveTo()
         if self._moveToTarget then
-            self._moveToTarget = nil
-            self._moveToTimeout = 8
-            self._moveToTickStart = 0
-            self._moveToDeadzoneRadius = 6
-            self.MoveDirection = Vector3.new()
+            self:_resetMoveTo()
+            self.MoveToFinished:Fire(false)
         end
         return self
     end
