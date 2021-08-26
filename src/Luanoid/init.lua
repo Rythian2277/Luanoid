@@ -100,7 +100,7 @@ local Luanoid = Class() do
             self:wrapinstance(
                 character,
                 {
-                    Simulated = luanoidParams.Simulated == nil and false or luanoidParams.Simulated,
+                    Simulated = luanoidParams.Simulated == true,
 
                     MoveDirection = Vector3.new(),
                     LookDirection = Vector3.new(),
