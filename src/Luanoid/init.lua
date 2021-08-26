@@ -31,6 +31,7 @@ local Luanoid = Class() do
             self:wrapinstance(
                 character,
                 {
+                    "Simulated",
                     "MoveDirection",
                     "LookDirection",
                     "Health",
@@ -99,6 +100,8 @@ local Luanoid = Class() do
             self:wrapinstance(
                 character,
                 {
+                    Simulated = luanoidParams.Simulated == nil and false or luanoidParams.Simulated,
+
                     MoveDirection = Vector3.new(),
                     LookDirection = Vector3.new(),
 
@@ -132,6 +135,9 @@ local Luanoid = Class() do
         self.LastState = CharacterState.Idling
         self.State = CharacterState.Idling
         self.AnimationTracks = {}
+
+        self.SimulationResumed = Event()
+        self.SimulationPaused = Event()
 
         self.RigChanged = Event()
 
@@ -528,6 +534,8 @@ local Luanoid = Class() do
         local connection = self._preSimConnection
         if connection then
             connection:Disconnect()
+            self.Simulated = false
+            self.SimulationPaused:Fire()
         end
         return self
     end
@@ -538,6 +546,8 @@ local Luanoid = Class() do
             self._preSimConnection = RunService.Heartbeat:Connect(function(dt)
                 self:step(dt)
             end)
+            self.Simulated = true
+            self.SimulationResumed:Fire()
         end
         return self
     end
