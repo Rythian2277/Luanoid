@@ -112,7 +112,7 @@ local Luanoid = Class() do
                     HipHeight = luanoidParams.HipHeight or 2,
                     MaxSlopeAngle = luanoidParams.MaxSlopeAngle or 89,
 
-                    AutoRotate = luanoidParams.AutoRotate == true,
+                    AutoRotate = luanoidParams.AutoRotate == nil and true or luanoidParams.AutoRotate,
                     Jump = false,
                 }
             )
@@ -350,7 +350,7 @@ local Luanoid = Class() do
         options = options or {}
         options.Timeout = options.Timeout or 8
         options.DeadzoneRadius = options.DeadzoneRadius or 6
-        options.ResetOnFinish = options.ResetOnFinish == true
+        options.ResetOnFinish = options.ResetOnFinish == nil and true or options.ResetOnFinish
 
         self._moveToTarget = target
         self._moveToTickStart = tick()
