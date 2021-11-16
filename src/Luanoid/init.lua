@@ -2,6 +2,10 @@
 --// Creator: Rythian Smythe / Rythian2277
 --// Date: April 18, 2021
 
+--[[ Revisions:
+  // 15/11/21 (RS) - Added Moonwave Documentation
+--]]
+
 type Target = BasePart | Vector3
 type CustomAccessory = Accessory | Model | BasePart
 
@@ -16,7 +20,28 @@ local CharacterState = require(script.CharacterState)
 local IS_CLIENT = RunService:IsClient()
 local IS_SERVER = RunService:IsServer()
 
+--[=[
+    @class Luanoid
+
+    The main Luanoid class.
+]=]
 local Luanoid = Class() do
+    --[=[
+        The initialisation function for the Luanoid Class.
+        @within Luanoid
+        @param luanoidParams {
+            Name = string?,
+            Simulated: Bool?, 
+            Health: Number?,
+            MaxHealth: Number?,
+            WalkSpeed: Number?,
+            JumpPower: Number?,
+            HipHeight: Number?,
+            MaxSlopeAngle: Number?,
+            AutoRotate: Bool?,
+        } -- Parameters for the Luanoid's creation.
+        @param character Model? -- A pre-existing Luanoid rigged character model.
+    ]=]
     function Luanoid:init(luanoidParams, character: Model?): nil
         luanoidParams = luanoidParams or {}
 
