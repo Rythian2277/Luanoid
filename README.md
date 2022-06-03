@@ -1,5 +1,7 @@
 # Luanoid
 
+**No longer maintained, new version [here](https://github.com/raphtalia/Luanoid)**
+
 A rewrite of the `Humanoid` class entirely in Luau!
 
 For developers who want more precise control over how their avatars behave in their games.
